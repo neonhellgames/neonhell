@@ -8014,7 +8014,7 @@ let copyDiv = document.createElement('div');
           let d = window._adminTarget ? window._adminTarget.data : {};
           let ownedSkins = d.skins || ['default'];
           let ownedCards = d.cards || [];
-          let allSkins = ['default','viper','ghost','rust','neon','crimson','frost','pulse','toxic','storm','obsidian','chrome','aurora','phantom','inferno','solar','nebula','void','quantum','celestial','singularity','ethereal','omega','cosmic','prestige1','prestige2','prestige3','prestige4','prestige5','spinVortex','spinPhoenix','spinWraith','spinNova'];
+          let allSkins = ['default','viper','ghost','rust','neon','crimson','frost','pulse','toxic','storm','obsidian','chrome','aurora','phantom','inferno','solar','nebula','void','quantum','celestial','singularity','ethereal','omega','apocalypse','cosmic','prestige1','prestige2','prestige3','prestige4','prestige5','spinVortex','spinPhoenix','spinWraith','spinNova'];
           let allCards = [];
           for(let r in ALL_UPGRADES) { ALL_UPGRADES[r].forEach(function(u) { if(!u.devOnly) allCards.push(u.name); }); }
           let html = '<div style="max-height:60vh;overflow-y:auto;">';
@@ -8910,6 +8910,7 @@ let rarity = isSkin ? item.rarity : (item.type || "ITEM");
               {id:'singularity',name:'Singularity',cost:5000000,rarity:'MYTHIC',desc:'Interstellar black hole with accretion disk. Gravity bullets pull enemies in. Idle mode triggers black hole vortex that sucks in and crushes nearby enemies.',buffs:'+5% CRIT | +15% COINS | AUTO-SHIELD | VOID PULL | BLACK HOLE VORTEX'},
               {id:'ethereal',name:'Ethereal',cost:10000000,rarity:'MYTHIC',desc:'Prismatic crystal interceptor with floating diamond shards. Color-shifting hull with ethereal wing crystals and ghost afterimage.',buffs:'-10% DMG | +20% XP | 10% PHASE'},
               {id:'omega',name:'Omega',cost:15000000,rarity:'MYTHIC',desc:'Stealth bomber with demonic eye. Twin drones fire frost lasers (7s freeze) and fire lasers (DOT). Rockets with splash damage. Chain lasers auto-target enemies.',buffs:'+25% DMG | EXTRA LIFE | FREE EPIC | FROST/FIRE DRONES | ROCKETS | CHAIN LASERS'},
+              {id:'apocalypse',name:'Apocalypse',cost:25000000,rarity:'MYTHIC',desc:'Doomsday weapon with crimson plasma core. Fires devastating annihilation beams that pierce through all enemies. Meteor strikes rain from above every 10 seconds.',buffs:'+40% DMG | +10% CRIT | PIERCE BEAMS | METEOR STRIKES | BURN DOT'},
               {id:'cosmic',name:'Cosmic Genesis',cost:50000000,rarity:'COSMIC',desc:'Reality-forging vessel of pure cosmic energy. Angel form when idle, transforms into combat fighter when shooting. Divine attacks every 5 seconds. Life drain on nearby enemies.',buffs:'+30% DMG | +30% COINS | ALL MYTHIC BUFFS | DIVINE ATTACKS | LIFE DRAIN'}
           ];          let item = allItems.find(function(i) { return i.id === id || i.name === id || i.name.toLowerCase() === id.toLowerCase() || i.id.toLowerCase() === id.toLowerCase(); });
 if(!item) return;
@@ -9104,10 +9105,11 @@ if(canAffordDmg) { dmgDiv.onmouseenter = () => { dmgDiv.style.transform = 'scale
           nameSpan.style.cssText = 'font-size:10px;font-weight:900;color:' + evo.color + ';letter-spacing:1px;';
           nameSpan.innerText = evo.name;
           let infoBtn = document.createElement('span');
-          infoBtn.style.cssText = 'width:24px;height:24px;min-width:24px;border-radius:50%;border:1px solid ' + evo.color + '40;display:flex;justify-content:center;align-items:center;font-size:10px;color:' + evo.color + ';cursor:pointer;background:rgba(0,0,0,0.5);';
+          infoBtn.style.cssText = 'width:24px;height:24px;min-width:24px;border-radius:50%;border:1px solid ' + evo.color + '40;display:flex;justify-content:center;align-items:center;font-size:10px;color:' + evo.color + ';cursor:pointer;background:rgba(0,0,0,0.5);touch-action:manipulation;z-index:5;';
           infoBtn.innerText = 'i';
           let evoNameCopy = evo.name;
-          infoBtn.onclick = function(ev) { ev.stopPropagation(); showFusionDetail(evoNameCopy); };
+          infoBtn.addEventListener('pointerdown', function(ev) { ev.stopPropagation(); ev.preventDefault(); showFusionDetail(evoNameCopy); }, true);
+          infoBtn.addEventListener('click', function(ev) { ev.stopPropagation(); ev.preventDefault(); showFusionDetail(evoNameCopy); }, true);
           nameDiv.appendChild(nameSpan);
           nameDiv.appendChild(infoBtn);
           div.appendChild(nameDiv);
@@ -9116,7 +9118,15 @@ if(canAffordDmg) { dmgDiv.onmouseenter = () => { dmgDiv.style.transform = 'scale
           restDiv.innerHTML = restHTML;
           div.appendChild(restDiv);
           if(canAfford && !prestigeLocked) {
-              div.onclick = function() { globalGems -= cost; unlockedFusions[evoNameCopy] = (unlockedFusions[evoNameCopy] || 0) + 1; shake += 10; playSound('level', 0.5); saveGame(); renderCyberTree(); };
+              div.addEventListener('click', function(ev) { 
+                  if(ev.target === infoBtn || ev.target.parentNode === nameDiv) return;
+                  globalGems -= cost; 
+                  unlockedFusions[evoNameCopy] = (unlockedFusions[evoNameCopy] || 0) + 1; 
+                  shake += 10; 
+                  playSound('level', 0.5); 
+                  saveGame(); 
+                  renderCyberTree(); 
+              });
           }
           container.appendChild(div);
       }      }
