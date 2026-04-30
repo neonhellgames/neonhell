@@ -1187,7 +1187,7 @@ text-transform: uppercase; font-weight: 900; letter-spacing: 15px; font-style: i
       <div class="cards" id="shopCards"></div>      <button class="cyber-btn-red" onclick="closeShop()" style="width:200px;">◈ EXIT SHOP ◈</button>
 </div>
     <div      id="cyberTreeUI"
-      style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,5,10,0.97); z-index:9997; flex-direction:column; align-items:center; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:20px 10px 100px; box-sizing:border-box;"
+      style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,5,10,0.97); z-index:400; flex-direction:column; align-items:center; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:20px 10px 100px; box-sizing:border-box;"
     >
       <div class="scanlines"></div>
       <h2
@@ -1314,7 +1314,7 @@ text-transform: uppercase; font-weight: 900; letter-spacing: 15px; font-style: i
         <button class="cyber-btn-red" onclick="closeRunStats(true)">◈ RETRY ◈</button>
         <button class="cyber-btn" onclick="closeRunStats(false)" style="color:#888;">◈ MENU ◈</button>
       </div>
-    </div>    <div id="fusionPreviewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,10,0.95);z-index:9999;justify-content:center;align-items:center;flex-direction:column;padding:20px;overflow-y:auto;"><canvas id="fusionPreviewCanvas" width="300" height="300" style="border:1px solid rgba(255,0,255,0.3);background:#050510;margin-bottom:10px;"></canvas><div id="fusionPreviewTitle" style="font-family:'Share Tech Mono',monospace;font-size:16px;color:#ff00ff;letter-spacing:4px;text-shadow:0 0 10px #ff00ff;margin-bottom:6px;text-align:center;"></div><div id="fusionPreviewDesc" style="font-family:'Share Tech Mono',monospace;font-size:8px;color:rgba(255,255,255,0.5);text-align:center;max-width:300px;margin-bottom:10px;"></div><div id="fusionPreviewTiers" style="display:flex;gap:4px;margin-bottom:10px;"></div><div id="fusionPreviewInfo" style="font-family:'Share Tech Mono',monospace;font-size:7px;color:rgba(255,255,255,0.4);text-align:center;max-width:300px;margin-bottom:10px;line-height:1.4;"></div><button class="cyber-btn-red" onclick="closeFusionPreview()" style="padding:8px 20px;">CLOSE</button></div>
+    </div>    <div id="fusionPreviewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,10,0.95);z-index:9997;justify-content:center;align-items:center;flex-direction:column;padding:20px;overflow-y:auto;"><canvas id="fusionPreviewCanvas" width="300" height="300" style="border:1px solid rgba(255,0,255,0.3);background:#050510;margin-bottom:10px;"></canvas><div id="fusionPreviewTitle" style="font-family:'Share Tech Mono',monospace;font-size:16px;color:#ff00ff;letter-spacing:4px;text-shadow:0 0 10px #ff00ff;margin-bottom:6px;text-align:center;"></div><div id="fusionPreviewDesc" style="font-family:'Share Tech Mono',monospace;font-size:8px;color:rgba(255,255,255,0.5);text-align:center;max-width:300px;margin-bottom:10px;"></div><div id="fusionPreviewTiers" style="display:flex;gap:4px;margin-bottom:10px;"></div><div id="fusionPreviewInfo" style="font-family:'Share Tech Mono',monospace;font-size:7px;color:rgba(255,255,255,0.4);text-align:center;max-width:300px;margin-bottom:10px;line-height:1.4;"></div><button class="cyber-btn-red" onclick="closeFusionPreview()" style="padding:8px 20px;">CLOSE</button></div>
     <div id="gameOver"><div class="scanlines"></div><h1>GAME OVER</h1>
       <p id="finalScore"></p>      <div style="display:flex;gap:10px;z-index:302;">
         <button class="cyber-btn-red" onclick="restartCurrent()">◈ RETRY ◈</button>
@@ -8014,7 +8014,7 @@ let copyDiv = document.createElement('div');
           let d = window._adminTarget ? window._adminTarget.data : {};
           let ownedSkins = d.skins || ['default'];
           let ownedCards = d.cards || [];
-          let allSkins = ['default','viper','ghost','rust','neon','crimson','frost','pulse','toxic','storm','obsidian','chrome','aurora','phantom','inferno','solar','nebula','void','quantum','celestial','singularity','ethereal','omega','apocalypse','cosmic','prestige1','prestige2','prestige3','prestige4','prestige5','spinVortex','spinPhoenix','spinWraith','spinNova'];
+          let allSkins = ['default','viper','ghost','rust','neon','crimson','frost','pulse','toxic','storm','obsidian','chrome','aurora','phantom','inferno','solar','nebula','void','quantum','celestial','singularity','ethereal','omega','cosmic','prestige1','prestige2','prestige3','prestige4','prestige5','spinVortex','spinPhoenix','spinWraith','spinNova'];
           let allCards = [];
           for(let r in ALL_UPGRADES) { ALL_UPGRADES[r].forEach(function(u) { if(!u.devOnly) allCards.push(u.name); }); }
           let html = '<div style="max-height:60vh;overflow-y:auto;">';
@@ -8910,7 +8910,6 @@ let rarity = isSkin ? item.rarity : (item.type || "ITEM");
               {id:'singularity',name:'Singularity',cost:5000000,rarity:'MYTHIC',desc:'Interstellar black hole with accretion disk. Gravity bullets pull enemies in. Idle mode triggers black hole vortex that sucks in and crushes nearby enemies.',buffs:'+5% CRIT | +15% COINS | AUTO-SHIELD | VOID PULL | BLACK HOLE VORTEX'},
               {id:'ethereal',name:'Ethereal',cost:10000000,rarity:'MYTHIC',desc:'Prismatic crystal interceptor with floating diamond shards. Color-shifting hull with ethereal wing crystals and ghost afterimage.',buffs:'-10% DMG | +20% XP | 10% PHASE'},
               {id:'omega',name:'Omega',cost:15000000,rarity:'MYTHIC',desc:'Stealth bomber with demonic eye. Twin drones fire frost lasers (7s freeze) and fire lasers (DOT). Rockets with splash damage. Chain lasers auto-target enemies.',buffs:'+25% DMG | EXTRA LIFE | FREE EPIC | FROST/FIRE DRONES | ROCKETS | CHAIN LASERS'},
-              {id:'apocalypse',name:'Apocalypse',cost:25000000,rarity:'MYTHIC',desc:'Doomsday weapon with crimson plasma core. Fires devastating annihilation beams that pierce through all enemies. Meteor strikes rain from above every 10 seconds.',buffs:'+40% DMG | +10% CRIT | PIERCE BEAMS | METEOR STRIKES | BURN DOT'},
               {id:'cosmic',name:'Cosmic Genesis',cost:50000000,rarity:'COSMIC',desc:'Reality-forging vessel of pure cosmic energy. Angel form when idle, transforms into combat fighter when shooting. Divine attacks every 5 seconds. Life drain on nearby enemies.',buffs:'+30% DMG | +30% COINS | ALL MYTHIC BUFFS | DIVINE ATTACKS | LIFE DRAIN'}
           ];          let item = allItems.find(function(i) { return i.id === id || i.name === id || i.name.toLowerCase() === id.toLowerCase() || i.id.toLowerCase() === id.toLowerCase(); });
 if(!item) return;
@@ -9022,30 +9021,8 @@ function renderCyberTree() { document.getElementById("treeBank").innerText = glo
           for(let i=1;i<=5;i++) tb += '<span style="display:inline-block;width:14px;height:4px;background:'+(i<=ct?_tc[i-1]:'rgba(255,255,255,0.08)')+';margin:0 1px;"></span>';
           let st = mx ? '<span style="color:#ff00ff;">MAX</span>' : (pl ? '<span style="color:#555;">P'+pr+'</span>' : (ca ? '<span style="color:#00ffcc;">'+formatGems(cst)+'</span>' : '<span style="color:#555;">'+formatGems(cst)+'</span>'));
           let tl = ct > 0 ? '<span style="color:'+_tc[ct-1]+';">'+_tn[ct-1]+'</span>' : '<span style="color:#555;">--</span>';
-          let _nameRow = document.createElement('div');
-          _nameRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;';
-          let _nameS = document.createElement('span');
-          _nameS.style.cssText = 'font-size:10px;font-weight:900;color:'+evo.color+';letter-spacing:1px;';
-          _nameS.innerText = evo.name;
-          _nameRow.appendChild(_nameS);
-          d.appendChild(_nameRow);
-          let _restDiv = document.createElement('div');
-          _restDiv.innerHTML = '<div style="font-size:6px;color:rgba(255,255,255,0.3);margin:2px 0;">'+evo.requires.join(' + ')+'</div><div style="margin:4px 0;">'+tb+'</div><div style="font-size:8px;">'+tl+'</div><div style="font-size:7px;color:rgba(255,255,255,0.3);margin:2px 0;">'+evo.desc+'</div><div style="border-top:1px solid #222;padding-top:4px;margin-top:4px;font-size:9px;">'+st+'</div>';
-          d.appendChild(_restDiv);
-          if(ca && !pl) {
-              let en = evo.name;
-              d.onclick = function(ev){
-                  if(ev.target && (ev.target.tagName==='BUTTON'||ev.target.parentElement&&ev.target.parentElement.tagName==='BUTTON')) return;
-                  globalGems-=cst;
-                  if(typeof unlockedFusions==='undefined')window.unlockedFusions={};
-                  unlockedFusions[en]=(unlockedFusions[en]||0)+1;
-                  shake+=10;
-                  playSound('level',0.5);
-                  saveGame();
-                  renderCyberTree();
-              };
-          }
-          container.appendChild(d);
+          let _evoN = evo.name; let _nameRow = document.createElement('div'); _nameRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;'; let _nameS = document.createElement('span'); _nameS.style.cssText = 'font-size:10px;font-weight:900;color:'+evo.color+';letter-spacing:1px;'; _nameS.innerText = evo.name;          let _iBtn = document.createElement('button'); _iBtn.style.cssText = 'width:28px;height:28px;min-width:28px;min-height:28px;border-radius:50%;border:1px solid '+evo.color+'40;display:flex;justify-content:center;align-items:center;font-size:11px;color:'+evo.color+';cursor:pointer;background:rgba(0,0,0,0.5);padding:0;margin:0;font-family:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation;'; _iBtn.innerText = 'i'; _iBtn.onpointerdown = function(ev){ev.stopPropagation();ev.preventDefault();showFusionDetail(_evoN);};          _nameRow.appendChild(_nameS); d.appendChild(_nameRow);
+let _restDiv = document.createElement('div'); _restDiv.innerHTML = '<div style="font-size:6px;color:rgba(255,255,255,0.3);margin:2px 0;">'+evo.requires.join(' + ')+'</div><div style="margin:4px 0;">'+tb+'</div><div style="font-size:8px;">'+tl+'</div><div style="font-size:7px;color:rgba(255,255,255,0.3);margin:2px 0;">'+evo.desc+'</div><div style="border-top:1px solid #222;padding-top:4px;margin-top:4px;font-size:9px;">'+st+'</div>'; d.appendChild(_restDiv);                          if(ca && !pl) { let en = evo.name; d.onclick = function(ev){if(ev.target && (ev.target.tagName==='BUTTON'||ev.target.parentElement&&ev.target.parentElement.tagName==='BUTTON')) return; globalGems-=cst;if(typeof unlockedFusions==='undefined')window.unlockedFusions={};unlockedFusions[en]=(unlockedFusions[en]||0)+1;shake+=10;playSound('level',0.5);saveGame();renderCyberTree();}; }          container.appendChild(d);
           let _ibtn2 = document.createElement('button');
           _ibtn2.style.cssText = 'position:absolute;top:4px;right:4px;width:28px;height:28px;min-width:28px;min-height:28px;border-radius:50%;border:1px solid '+evo.color+'40;display:flex;justify-content:center;align-items:center;font-size:11px;color:'+evo.color+';cursor:pointer;background:rgba(0,0,0,0.7);padding:0;margin:0;font-family:inherit;touch-action:manipulation;z-index:5;';
           _ibtn2.innerText = 'i';
@@ -9105,11 +9082,10 @@ if(canAffordDmg) { dmgDiv.onmouseenter = () => { dmgDiv.style.transform = 'scale
           nameSpan.style.cssText = 'font-size:10px;font-weight:900;color:' + evo.color + ';letter-spacing:1px;';
           nameSpan.innerText = evo.name;
           let infoBtn = document.createElement('span');
-          infoBtn.style.cssText = 'width:24px;height:24px;min-width:24px;border-radius:50%;border:1px solid ' + evo.color + '40;display:flex;justify-content:center;align-items:center;font-size:10px;color:' + evo.color + ';cursor:pointer;background:rgba(0,0,0,0.5);touch-action:manipulation;z-index:5;';
+          infoBtn.style.cssText = 'width:24px;height:24px;min-width:24px;border-radius:50%;border:1px solid ' + evo.color + '40;display:flex;justify-content:center;align-items:center;font-size:10px;color:' + evo.color + ';cursor:pointer;background:rgba(0,0,0,0.5);';
           infoBtn.innerText = 'i';
           let evoNameCopy = evo.name;
-          infoBtn.addEventListener('pointerdown', function(ev) { ev.stopPropagation(); ev.preventDefault(); showFusionDetail(evoNameCopy); }, true);
-          infoBtn.addEventListener('click', function(ev) { ev.stopPropagation(); ev.preventDefault(); showFusionDetail(evoNameCopy); }, true);
+          infoBtn.onclick = function(ev) { ev.stopPropagation(); showFusionDetail(evoNameCopy); };
           nameDiv.appendChild(nameSpan);
           nameDiv.appendChild(infoBtn);
           div.appendChild(nameDiv);
@@ -9118,15 +9094,7 @@ if(canAffordDmg) { dmgDiv.onmouseenter = () => { dmgDiv.style.transform = 'scale
           restDiv.innerHTML = restHTML;
           div.appendChild(restDiv);
           if(canAfford && !prestigeLocked) {
-              div.addEventListener('click', function(ev) { 
-                  if(ev.target === infoBtn || ev.target.parentNode === nameDiv) return;
-                  globalGems -= cost; 
-                  unlockedFusions[evoNameCopy] = (unlockedFusions[evoNameCopy] || 0) + 1; 
-                  shake += 10; 
-                  playSound('level', 0.5); 
-                  saveGame(); 
-                  renderCyberTree(); 
-              });
+              div.onclick = function() { globalGems -= cost; unlockedFusions[evoNameCopy] = (unlockedFusions[evoNameCopy] || 0) + 1; shake += 10; playSound('level', 0.5); saveGame(); renderCyberTree(); };
           }
           container.appendChild(div);
       }      }
