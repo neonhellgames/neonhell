@@ -27449,13 +27449,13 @@ if(isEnemy){
 
 // Add animated canvas preview for specific skin entries
 var _skinPreviewTitles = ['Mythic Skin','Cosmic Skin','Prestige Skins'];
-var _isSkinPreview = e.cat === 'SKINS' && _skinPreviewTitles.some(function(p){ return e.title.indexOf(p) !== -1; });
+var _isSkinPreview = e.cat === 'SKINS' && (_skinPreviewTitles.some(function(p){ return e.title.indexOf(p) !== -1; }) || e.title.indexOf('Skin — ') !== -1);
 if(_isSkinPreview && !previewHtml) {
     var _skinColor = '#aa44ff';
     if(e.title.indexOf('Singularity') !== -1) _skinColor = '#9900ff';
     else if(e.title.indexOf('Ethereal') !== -1) _skinColor = '#00ccff';
     else if(e.title.indexOf('Omega') !== -1) _skinColor = '#ff4400';
-    else if(e.title.indexOf('Genesis') !== -1) _skinColor = '#ffd700';
+    else if(e.title.indexOf('Genesis') !== -1 || e.title.indexOf('Cosmic Genesis') !== -1) _skinColor = '#ffd700';
     else if(e.title.indexOf('Apocalypse') !== -1) _skinColor = '#ff2200';
     else if(e.title.indexOf('Prestige') !== -1) _skinColor = '#ffaa00';
     var _skinCanvasId = 'skinPreview_' + e.title.replace(/[^a-zA-Z0-9]/g,'_');
@@ -28089,7 +28089,7 @@ function initSkinPreviews() {
     var sc = skinCanvases[si];
     if(!sc || !sc.getContext) continue;
     sc.width = 90; sc.height = 90;
-    var skinId = sc.id;
+    var skinId = sc.id.replace('skinPreview_', '').replace(/_/g, ' ');
     (function launchSkinPreview(canvas, id) {
       var ctx2 = canvas.getContext('2d');
       var W = 90, H = 90, cx = 45, cy = 45;
