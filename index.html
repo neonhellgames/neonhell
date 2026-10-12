@@ -86350,6 +86350,991 @@ function _hideModifierBanner() {
   })();
 })();
 </script>
+<script>
+(function () {
+  'use strict';
+  // ══════════════════════════════════════════════════════════════════════════
+  //  v7.6.9 — PHANTOM: "THE INTERDICTION CAB"
+  //  The PHANTOM kit is a hit-and-fade interceptor: HIT I-FRAMES, PHASE WALK,
+  //  PHANTOM FORM (6s invincibility / 60s), REAR VOLLEYS fired out of the tail
+  //  and a GHOST ALLY spectral twin. Its cockpit is the inside of that ship:
+  //  an interdiction cab cruising a void nebula at phase speed.
+  //
+  //  ── FRAME (the cab shell, always on) ──
+  //    · chromatic split: every strut draws twice — violet and teal ghosts a
+  //      few px apart — the phase signature of the airframe itself
+  //    · canopy arch over the sky, A-pillars with machined facet cuts,
+  //      side rails carrying phase-conduit flow channels (animated dash +
+  //      travelling light packets)
+  //    · console deck: layered dark metal, beveled lip, etched seam lines,
+  //      rivets, a nameplate, and FRACTURE GLASS spreading across the deck
+  //      as the weapon core heats (heat = microfractures in the pane)
+  //    · outside: drifting nebula blooms, parallax star-rain streaking up
+  //      the pillars (speed lines), rare silent phase-flashes
+  //  ── HUD (instruments; nothing is a flat sticker) ──
+  //    · PHASE RESONATOR (bottom-left): the hull meter reborn as a quartz
+  //      resonator ring — rotating outer bezel, inner crystal whose SHARDS
+  //      break away as HP drops, resonance hum arc, hull readout in the core
+  //    · VOID CELL (left rail): anti-light battery column — the fuel gauge
+  //      inverted: a bright charge suspended in darkness, drain flicker on
+  //      flameout, rising bubbles while refuelling
+  //    · FRACTURE ARC: heat wraps the resonator as cracking glass strokes,
+  //      cyan→amber→red, steam puffs, MELTDOWN blink on lock
+  //    · PHASE ANCHORS (right rail): two focus capacitors — charge shimmer,
+  //      drain flicker; owns window._nhFocusZone tap area
+  //    · GRAZE SOLVER (top-centre): the radar — a 32-heading dodge-solver
+  //      dial, sweep arm, enemy cells (off-screen threats only), boss wedge
+  //    · DIM-SLICE CHART (bottom-right): the minimap as a slice of the void
+  //      facility — rooms as dim cells, corridors as conduits, you a bright
+  //      phase spark, ghost ally its tethered twin
+  //    · PHANTOM GAUGE (right rail, above the anchors): i-frame halo,
+  //      PHANTOM FORM cooldown/active ring, ghost-ally vitals pip
+  //    · XP TIDE ribbon, rank plate, wave chrono, buff wisps, threat edge
+  //      marks, boss corona — every default channel stays readable
+  //  Every closure is individually try/caught so one dead instrument can
+  //  never blank the cab.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── shared helpers (P_ prefix — no collisions with other theme blocks) ──
+  function P_cl(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function P_R(n) { let x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+  var VIOLET = 'rgba(170,90,255,', TEAL = 'rgba(0,255,204,', BONE = 'rgba(232,244,255,';
+  function P_lab(c, s, x, y, px, al, col, a) {
+    c.save();
+    c.font = 'bold ' + px + "px 'Share Tech Mono',monospace";
+    c.textAlign = al || 'center'; c.textBaseline = 'middle';
+    c.shadowColor = col ? (col.indexOf('rgba') === 0 ? col : col) : (TEAL + '0.8)'); c.shadowBlur = 6;
+    c.fillStyle = (col && col.indexOf('rgba') === 0) ? col + (a === undefined ? '0.9)' : a.toFixed(2) + ')')
+      : 'rgba(232,244,255,' + (a === undefined ? '0.85' : a) + ')';
+    c.fillText(s, x, y);
+    c.restore();
+  }
+  function P_dot(c, x, y, r, col, a) {
+    c.fillStyle = col + (a === undefined ? '0.9)' : a.toFixed(2) + ')');
+    c.beginPath(); c.arc(x, y, r, 0, 6.2832); c.fill();
+  }
+  function P_glowDot(c, x, y, r, col) {
+    var g = c.createRadialGradient(x, y, 0.3, x, y, r * 3.2);
+    g.addColorStop(0, col + '0.85)'); g.addColorStop(0.35, col + '0.3)'); g.addColorStop(1, col + '0)');
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, r * 3.2, 0, 6.2832); c.fill();
+    c.fillStyle = col + '0.95)'; c.beginPath(); c.arc(x, y, r, 0, 6.2832); c.fill();
+  }
+  // layered dark metal slab with bevel + catch-light (the cab's panel stock)
+  function P_metal(c, x, y, w, h, r) {
+    c.save();
+    c.beginPath();
+    if (c.roundRect) c.roundRect(x, y, w, h, r || 4); else c.rect(x, y, w, h);
+    var g = c.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, 'rgba(38,30,64,0.96)');
+    g.addColorStop(0.14, 'rgba(20,16,38,0.97)');
+    g.addColorStop(0.6, 'rgba(11,9,22,0.98)');
+    g.addColorStop(0.92, 'rgba(6,5,14,0.99)');
+    g.addColorStop(1, 'rgba(24,18,44,0.98)');
+    c.fillStyle = g; c.fill();
+    var te = c.createLinearGradient(0, y, 0, y + 5);
+    te.addColorStop(0, 'rgba(200,180,255,0.22)'); te.addColorStop(1, 'rgba(200,180,255,0)');
+    c.fillStyle = te; c.fillRect(x + 1, y, w - 2, 5);
+    var le = c.createLinearGradient(x, 0, x + 4, 0);
+    le.addColorStop(0, 'rgba(0,255,204,0.14)'); le.addColorStop(1, 'rgba(0,255,204,0)');
+    c.fillStyle = le; c.fillRect(x, y + 2, 4, h - 4);
+    c.restore();
+  }
+  // chromatic-split stroke: the same path drawn violet + teal, slightly offset
+  function P_split(c, pathFn, lw, alpha, t) {
+    var dx = 1.1 + 0.5 * Math.sin(t * 1.7);
+    c.save(); c.lineWidth = lw; c.globalAlpha = alpha; c.lineCap = 'round';
+    c.strokeStyle = VIOLET + '0.85)'; c.translate(-dx, 0); pathFn(c); c.stroke();
+    c.strokeStyle = TEAL + '0.85)';   c.translate(dx * 2, 0); pathFn(c); c.stroke();
+    c.restore();
+  }
+  // fracture-glass crack growing from a seed point
+  function P_crack(c, x0, y0, ang, len, seed, depth, hs, alpha) {
+    c.save();
+    c.strokeStyle = BONE + (alpha || 0.5).toFixed(2) + ')';
+    c.lineWidth = Math.max(0.6, 1 * hs);
+    c.beginPath(); c.moveTo(x0, y0);
+    var x = x0, y = y0, a = ang;
+    for (var s = 0; s < depth; s++) {
+      var seg = len / depth;
+      a += (P_R(seed + s * 3.1) - 0.5) * 0.9;
+      x += Math.cos(a) * seg; y += Math.sin(a) * seg;
+      c.lineTo(x, y);
+      if (s > 1 && P_R(seed + s * 7.7) > 0.72) {   // branch
+        var ba = a + (P_R(seed + s) > 0.5 ? 0.9 : -0.9), bl = seg * (0.6 + P_R(seed + s * 2) * 0.8);
+        c.moveTo(x, y);
+        c.lineTo(x + Math.cos(ba) * bl, y + Math.sin(ba) * bl);
+        c.moveTo(x, y);
+      }
+    }
+    c.stroke();
+    c.restore();
+  }
+  function P_nebula(c, x, y, r, hueA, hueB, t, seed, a) {
+    var pu = 0.5 + 0.5 * Math.sin(t * 0.23 + seed * 2.1);
+    var g = c.createRadialGradient(x, y, r * 0.06, x, y, r);
+    g.addColorStop(0, hueA + (a * (0.5 + 0.3 * pu)).toFixed(3) + ')');
+    g.addColorStop(0.55, hueB + (a * 0.4 * (0.6 + 0.4 * pu)).toFixed(3) + ')');
+    g.addColorStop(1, hueA + '0)');
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, 6.2832); c.fill();
+  }
+
+  // ── PHANTOM low-hull alarm: a phased-out siren — detuned dual sawtooth bed
+  //    running through a sweeping bandpass (the sound slides in and out of
+  //    phase like the hull itself), plus cold bell partials and vacuum whooshes
+  window.nhPhantomAlarmStart = function () {
+    if (window._phmAlarm) return;
+    try { if (typeof sirenMuted !== 'undefined' && sirenMuted) return; } catch (e) {}
+    try {
+      var ac = AudioCtx; if (ac.state === 'suspended') ac.resume();
+      var bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 640; bp.Q.value = 2.2;
+      var g = ac.createGain(); g.gain.value = 0.0001;
+      bp.connect(g); g.connect(ac.destination);
+      var o1 = ac.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 233;
+      var o2 = ac.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = 233 * 1.007;
+      var o3 = ac.createOscillator(); o3.type = 'sine'; o3.frequency.value = 58;
+      var g1 = ac.createGain(); g1.gain.value = 0.34;
+      var g2 = ac.createGain(); g2.gain.value = 0.30;
+      var g3 = ac.createGain(); g3.gain.value = 0.5;
+      o1.connect(g1); g1.connect(bp); o2.connect(g2); g2.connect(bp); o3.connect(g3); g3.connect(g);
+      // phase-slide LFO on the bandpass — the wail ducks in and out of existence
+      var lfo = ac.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.55;
+      var lg = ac.createGain(); lg.gain.value = 520;
+      lfo.connect(lg); lg.connect(bp.frequency);
+      // slow amplitude breathing
+      var lfo2 = ac.createOscillator(); lfo2.frequency.value = 0.9;
+      var lg2 = ac.createGain(); lg2.gain.value = 0.028;
+      lfo2.connect(lg2); lg2.connect(g.gain);
+      o1.start(); o2.start(); o3.start(); lfo.start(); lfo2.start();
+      g.gain.linearRampToValueAtTime(0.075, ac.currentTime + 0.8);
+      var iv = setInterval(function () {
+        try {
+          if (typeof sirenMuted !== 'undefined' && sirenMuted) return;
+          // cold inharmonic bell — a chime struck in vacuum
+          var f0 = 466;
+          var parts = [[1, 0.03, 1.6], [1.41, 0.02, 1.2], [2.02, 0.014, 0.9], [2.84, 0.008, 0.6]];
+          for (var pi = 0; pi < parts.length; pi++) {
+            var o = ac.createOscillator(); o.type = 'sine';
+            o.frequency.value = f0 * parts[pi][0];
+            var og = ac.createGain();
+            og.gain.setValueAtTime(0.0001, ac.currentTime);
+            og.gain.linearRampToValueAtTime(parts[pi][1], ac.currentTime + 0.008);
+            og.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + parts[pi][2]);
+            o.connect(og); og.connect(ac.destination);
+            o.start(); o.stop(ac.currentTime + parts[pi][2] + 0.05);
+          }
+          // vacuum whoosh gust
+          var len = Math.floor(ac.sampleRate * 0.5);
+          var buf = ac.createBuffer(1, len, ac.sampleRate);
+          var dd = buf.getChannelData(0);
+          for (var i = 0; i < len; i++) { var u = i / len; dd[i] = (Math.random() * 2 - 1) * Math.sin(u * Math.PI) * 0.7; }
+          var src = ac.createBufferSource(); src.buffer = buf;
+          var hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1800;
+          var wg = ac.createGain(); wg.gain.value = 0.02;
+          src.connect(hp); hp.connect(wg); wg.connect(ac.destination);
+          src.start();
+        } catch (e) {}
+      }, 2100);
+      window._phmAlarm = { o1: o1, o2: o2, o3: o3, lfo: lfo, lfo2: lfo2, g: g, iv: iv };
+    } catch (e) {}
+  };
+  window.nhPhantomAlarmStop = function () {
+    var A = window._phmAlarm; if (!A) return; window._phmAlarm = null;
+    try { clearInterval(A.iv); } catch (e) {}
+    try {
+      var ac = AudioCtx;
+      A.g.gain.cancelScheduledValues(ac.currentTime);
+      A.g.gain.setValueAtTime(Math.max(0.0001, A.g.gain.value), ac.currentTime);
+      A.g.gain.linearRampToValueAtTime(0.0001, ac.currentTime + 0.4);
+      setTimeout(function () { try { A.o1.stop(); A.o2.stop(); A.o3.stop(); A.lfo.stop(); A.lfo2.stop(); } catch (e) {} }, 550);
+    } catch (e) { try { A.o1.stop(); A.o2.stop(); A.o3.stop(); } catch (e) {} }
+  };
+  // every existing stopSiren() path also douses the phantom alarm
+  (function () { try { var _ss = window.stopSiren; if (typeof _ss === 'function') window.stopSiren = function () { try { window.nhPhantomAlarmStop(); } catch (e) {} return _ss.apply(this, arguments); }; } catch (e) {} })();
+
+  // ══════════════════════ THEME REGISTRATION ══════════════════════
+  window.NH_HUD_THEMES = window.NH_HUD_THEMES || {};
+  window.NH_HUD_THEMES.phantom = {
+    id: 'phantom',
+    pal: { core: '#00ffcc', coreRGB: '0,255,204', accent: '#aa5aff', accentRGB: '170,90,255', bone: '#e8f4ff', boneRGB: '232,244,255', dark: '#06050f', xp: '#8affe0', warnRGB: '255,110,170' },
+    words: { stage: 'VOID ', hostile: 'PHASED ' },
+    objFilter: 'hue-rotate(150deg) saturate(1.15) brightness(1.1)',
+    graceFilter: 'hue-rotate(190deg) saturate(1.1) brightness(1.15)',
+    alarmStart: function () { try { window.nhPhantomAlarmStart(); } catch (e) {} },
+    alarmStop: function () { try { window.nhPhantomAlarmStop(); } catch (e) {} },
+
+    // ── FRAME: the cab shell — chromatic-split struts, conduit rails, console deck ──
+    frame: function (c, W, H, t, hs) {
+      var port = (W < 500 && H > W);
+      var heat = 0; try { heat = P_cl((window.NH_HEATW || {}).heat || 0, 0, 100); } catch (e) {}
+      var conTop = H - Math.floor((port ? 128 : 108) * hs);
+      window._phmConTop = conTop;
+      // ── outside: void nebula drifting past the canopy ──
+      c.save();
+      c.beginPath(); c.rect(0, 0, W, conTop); c.clip();
+      var bg = c.createLinearGradient(0, 0, 0, conTop);
+      bg.addColorStop(0, 'rgba(7,4,18,0.55)'); bg.addColorStop(0.6, 'rgba(4,8,16,0.4)'); bg.addColorStop(1, 'rgba(10,4,20,0.5)');
+      c.fillStyle = bg; c.fillRect(0, 0, W, conTop);
+      for (var nb = 0; nb < 3; nb++) {
+        var nx = ((t * (3 + nb * 4) + nb * 610) % (W + 500 * hs)) - 250 * hs;
+        var ny = conTop * (0.2 + nb * 0.26);
+        P_nebula(c, nx, ny, (90 + nb * 40) * hs, nb === 1 ? VIOLET : TEAL, nb === 1 ? TEAL : VIOLET, t, nb * 3.7, 0.05 + 0.02 * nb);
+      }
+      // star-rain streaking UP the glass — phase-speed lines
+      for (var st = 0; st < 16; st++) {
+        var su = ((t * (0.5 + P_R(st) * 0.7) + P_R(st * 5.5)) % 1);
+        var sx = P_R(st * 3.3) * W;
+        var sy = conTop * (1 - su);
+        var sl = (8 + P_R(st * 9.1) * 22) * hs * (0.4 + su);
+        c.strokeStyle = (st % 3 === 0 ? VIOLET : BONE) + (0.10 + 0.18 * su).toFixed(2) + ')';
+        c.lineWidth = Math.max(0.6, 1 * hs);
+        c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx, sy - sl); c.stroke();
+      }
+      // rare silent phase-flash — the whole sky inverts hue for two frames
+      var pf = Math.sin(t * 0.31) * Math.sin(t * 0.17);
+      if (pf > 0.985) { c.fillStyle = VIOLET + '0.05)'; c.fillRect(0, 0, W, conTop); }
+      c.restore();
+      // ── side rails: beveled slabs with facet cuts + phase-conduit channels ──
+      for (var s2 = 0; s2 < 2; s2++) {
+        var rw = Math.floor((port ? 14 : 24) * hs), x0 = s2 ? W - rw : 0, dir = s2 ? -1 : 1;
+        var g = c.createLinearGradient(s2 ? W : 0, 0, s2 ? W - rw : rw, 0);
+        g.addColorStop(0, 'rgba(10,6,22,0.92)'); g.addColorStop(0.6, 'rgba(6,4,14,0.7)'); g.addColorStop(1, 'rgba(6,4,14,0)');
+        c.fillStyle = g; c.fillRect(x0, 0, rw, conTop);
+        for (var f = 0; f < 4; f++) {
+          var fy0 = conTop * (0.08 + f * 0.23), fy1 = fy0 + conTop * 0.17;
+          var fg = c.createLinearGradient(x0, fy0, x0 + rw, fy1);
+          fg.addColorStop(0, 'rgba(255,255,255,0.03)'); fg.addColorStop(0.5, VIOLET + '0.03)'); fg.addColorStop(1, 'rgba(0,0,0,0.14)');
+          c.fillStyle = fg;
+          c.beginPath();
+          c.moveTo(x0 + (s2 ? 0 : 2), fy0); c.lineTo(x0 + rw * 0.7, fy0 + conTop * 0.02);
+          c.lineTo(x0 + rw * 0.7, fy1 - conTop * 0.02); c.lineTo(x0 + (s2 ? 0 : 2), fy1); c.closePath(); c.fill();
+          c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 1.4;
+          c.beginPath(); c.moveTo(x0 + (s2 ? 1 : rw - 1), fy1); c.lineTo(x0 + rw * 0.7, fy1 - conTop * 0.02); c.stroke();
+        }
+        // conduit channel: groove + animated dash flow + travelling packets
+        var chx = x0 + (s2 ? rw * 0.32 : rw * 0.68);
+        c.strokeStyle = 'rgba(0,0,0,0.6)'; c.lineWidth = 3 * hs;
+        c.beginPath(); c.moveTo(chx, conTop * 0.03); c.lineTo(chx, conTop * 0.97); c.stroke();
+        c.setLineDash([9 * hs, 13 * hs]); c.lineDashOffset = -t * 34 * hs * dir;
+        P_split(c, function (cc) { cc.beginPath(); cc.moveTo(chx, conTop * 0.03); cc.lineTo(chx, conTop * 0.97); }, 1.5 * hs, 0.4, t);
+        c.setLineDash([]);
+        for (var pk = 0; pk < 2; pk++) {
+          var pu = (t * 0.2 + pk * 0.5 + s2 * 0.25) % 1;
+          var py = conTop * (0.03 + pu * 0.94);
+          P_glowDot(c, chx, py, 1.6 * hs, pk % 2 ? VIOLET : TEAL);
+        }
+      }
+      // ── canopy arch across the top, chromatic-split edge ──
+      var abH = Math.floor((port ? 10 : 14) * hs);
+      var ag = c.createLinearGradient(0, 0, 0, abH);
+      ag.addColorStop(0, 'rgba(16,10,32,0.95)'); ag.addColorStop(1, 'rgba(8,5,18,0.75)');
+      c.fillStyle = ag; c.fillRect(0, 0, W, abH);
+      P_split(c, function (cc) { cc.beginPath(); cc.moveTo(0, abH); cc.lineTo(W, abH); }, 1.4 * hs, 0.55, t);
+      // arch ribs fanning from the beam
+      for (var rb = 0; rb < 5; rb++) {
+        var rx = W * (0.12 + rb * 0.19);
+        c.strokeStyle = 'rgba(20,14,40,0.5)'; c.lineWidth = 3 * hs;
+        c.beginPath(); c.moveTo(rx, abH); c.quadraticCurveTo(rx + (rx - W / 2) * 0.12, abH + 16 * hs, rx + (rx - W / 2) * 0.2, abH + 30 * hs); c.stroke();
+      }
+      // ── console deck: layered metal, lip light, seams, rivets ──
+      var dg = c.createLinearGradient(0, conTop, 0, H);
+      dg.addColorStop(0, 'rgba(34,24,58,0.97)'); dg.addColorStop(0.12, 'rgba(18,12,34,0.98)');
+      dg.addColorStop(0.6, 'rgba(9,6,18,0.99)'); dg.addColorStop(1, 'rgba(4,3,10,1)');
+      c.fillStyle = dg; c.fillRect(0, conTop, W, H - conTop);
+      var lip = c.createLinearGradient(0, conTop, 0, conTop + 5 * hs);
+      lip.addColorStop(0, 'rgba(210,190,255,0.3)'); lip.addColorStop(1, 'rgba(210,190,255,0)');
+      c.fillStyle = lip; c.fillRect(0, conTop, W, 5 * hs);
+      P_split(c, function (cc) { cc.beginPath(); cc.moveTo(0, conTop + 1); cc.lineTo(W, conTop + 1); }, 1.2, 0.5, t);
+      // etched seam lines + rivets along the deck front
+      c.strokeStyle = 'rgba(255,255,255,0.05)'; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(0, conTop + 14 * hs); c.lineTo(W, conTop + 14 * hs); c.stroke();
+      for (var rv = 0; rv < Math.floor(W / (34 * hs)); rv++) {
+        var rx2 = 17 * hs + rv * 34 * hs;
+        c.fillStyle = 'rgba(120,100,180,0.25)';
+        c.beginPath(); c.arc(rx2, conTop + 8 * hs, 1.1 * hs, 0, 6.2832); c.fill();
+        c.fillStyle = 'rgba(0,0,0,0.4)';
+        c.beginPath(); c.arc(rx2, conTop + 8 * hs + 0.6 * hs, 0.7 * hs, 0, 6.2832); c.fill();
+      }
+      // ── FRACTURE GLASS: heat cracks spreading across the pane above the deck ──
+      var nCracks = Math.floor(heat / 14);
+      for (var cr = 0; cr < nCracks; cr++) {
+        var seed = cr * 17.3 + 4;
+        var cx2 = P_R(seed) * W, cy2 = conTop - 4 * hs - P_R(seed + 1) * 26 * hs;
+        var grow = P_cl((heat - cr * 14) / 14, 0, 1);
+        P_crack(c, cx2, cy2, -Math.PI / 2 + (P_R(seed + 2) - 0.5) * 1.6, (16 + 30 * grow) * hs, seed, 4 + Math.floor(grow * 4), hs, 0.14 + 0.2 * grow);
+      }
+      if (heat > 82) {   // critical: the fractures glow amber through the glass
+        c.fillStyle = 'rgba(255,150,70,' + (0.03 + 0.03 * Math.sin(t * 9)).toFixed(2) + ')';
+        c.fillRect(0, conTop - 40 * hs, W, 40 * hs);
+      }
+      // nameplate centre-deck
+      P_metal(c, W / 2 - 62 * hs, conTop + 4 * hs, 124 * hs, 11 * hs, 3);
+      P_lab(c, 'PHM-IX INTERDICTION CAB', W / 2, conTop + 9.6 * hs, Math.floor(6.5 * hs), 'center', TEAL, 0.55);
+    },
+
+    // ── HUD: the instrument flight ──
+    hud: function (c, W, H, t, hs, S) {
+      S = S || {};
+      c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+      var port = (W < 500 && H > W);
+      var hpPct = S.hpMax > 0 ? P_cl(S.hp / S.hpMax, 0, 1) : 0;
+      var fpct = S.fuelMax > 0 ? P_cl(S.fuel / S.fuelMax, 0, 1) : 0;
+      var heat = P_cl(S.heat || 0, 0, 100);
+      var conTop = window._phmConTop || (H - Math.floor((port ? 128 : 108) * hs));
+      var warn = S.lock ? 'CORE MELTDOWN' : (hpPct < 0.3 ? 'HULL PHASING OUT' : (S.flameout ? 'VOID CELL DRY' : (fpct < 0.25 ? 'CELL LOW' : '')));
+      // hit-flash memory: the resonator shudders when HP drops
+      var shk = window._phmShk || (window._phmShk = { hp: S.hp, v: 0, t0: 0 });
+      if (S.hp < shk.hp - 0.01) { shk.v = 1; shk.t0 = t; }
+      shk.hp = S.hp;
+      var shake = shk.v > 0 ? P_cl(1 - (t - shk.t0) / 0.5, 0, 1) * shk.v : 0;
+      // ── PHASE RESONATOR (hull) ──
+      var rX = Math.floor(70 * hs), rY = H - Math.floor(80 * hs), rR = Math.floor(48 * hs);
+      window._phmRing = [rX, rY, rR];
+      phResonator(c, rX, rY, rR, hpPct, S.hp, S.hpMax, t, hs, shake, warn);
+      // ── FRACTURE ARC (heat wraps the resonator) ──
+      phHeatArc(c, rX, rY, rR, heat, !!S.lock, t, hs);
+      // ── VOID CELL (fuel column, left rail above the resonator) ──
+      phVoidCell(c, Math.floor(16 * hs), H - Math.floor(168 * hs), Math.floor(13 * hs), Math.floor(72 * hs), fpct, S.refuel, S.flameout, t, hs);
+      // ── PHASE ANCHORS (focus capacitors, right rail) ──
+      var fz = phAnchors(c, W - Math.floor(52 * hs), H - Math.floor(120 * hs), hs, S.ch | 0, S.ft || 0, t);
+      window._nhFocusZone = fz;
+      // ── PHANTOM GAUGE (i-frames / form cooldown / ghost ally) ──
+      phPhantomGauge(c, W - Math.floor(30 * hs), H - Math.floor(190 * hs), Math.floor(20 * hs), hs, t);
+      // ── GRAZE SOLVER (radar dial, top-centre) ──
+      phGrazeSolver(c, W / 2, Math.floor((port ? 46 : 40) * hs), Math.floor((port ? 26 : 30) * hs), hs, t);
+      // ── DIM-SLICE CHART (minimap, bottom-right) ──
+      phDimSlice(c, W - Math.floor(64 * hs), H - Math.floor(64 * hs), Math.floor(52 * hs), hs, t, port);
+      // ── XP TIDE ribbon along the deck lip ──
+      phXpTide(c, W, conTop, t, hs);
+      // ── rank plate + chrono on the deck ──
+      phRankPlate(c, W / 2 + Math.floor(86 * hs), conTop, hs, t, S.lvl || 1);
+      phChrono(c, W / 2 - Math.floor(86 * hs), conTop, hs, t);
+      // ── buff wisps drifting over the deck right of the chronometer ──
+      phBuffs(c, W, conTop, hs, t);
+      // ── threat edge marks + boss corona ──
+      phThreats(c, W, H, hs, t);
+      // vignette
+      var vg = c.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.42, W / 2, H / 2, Math.max(W, H) * 0.75);
+      vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(4,2,10,0.4)');
+      c.fillStyle = vg; c.fillRect(0, 0, W, H);
+      c.restore();
+    },
+
+    cluster: function (c, rx, ry, rr, hs, t) {
+      // spectral resonance spokes around the stock ring position
+      c.save();
+      for (var i = 0; i < 12; i++) {
+        var a = i / 12 * 6.2832 + t * 0.4;
+        var len = (5 + 3 * Math.sin(t * 3 + i)) * hs;
+        c.strokeStyle = i % 3 === 0 ? VIOLET + '0.35)' : TEAL + '0.3)';
+        c.lineWidth = 1.1 * hs;
+        c.beginPath();
+        c.moveTo(rx + Math.cos(a) * (rr + 7 * hs), ry + Math.sin(a) * (rr + 7 * hs));
+        c.lineTo(rx + Math.cos(a) * (rr + 7 * hs + len), ry + Math.sin(a) * (rr + 7 * hs + len));
+        c.stroke();
+      }
+      c.restore();
+    },
+
+    // ── ANNOUNCE: the text phases IN — violet/teal ghosts converge onto it ──
+    announce: function (ctx, wa, W, H, t, hs, opts) {
+      opts = opts || {};
+      var mx = opts.max || 90;
+      var age = mx - wa.timer;
+      var A = Math.min(1, age / 10) * Math.min(1, wa.timer / 15);
+      if (A <= 0.01) return;
+      var dread = /BOSS|AMBUSH|HOST LOST|☠/i.test(wa.text || '');
+      var cx = W / 2, cy = Math.floor(H * (opts.yFrac || ((W < 500 && H > W) ? 0.4 : 0.32)));
+      var conv = P_cl(1 - age / 16, 0, 1);            // ghosts converge as it lands
+      ctx.save();
+      ctx.globalAlpha = A;
+      // void veil behind the words
+      var vw = Math.min(W * 0.84, 420 * hs), vh = 58 * hs;
+      var vg = ctx.createLinearGradient(cx - vw / 2, 0, cx + vw / 2, 0);
+      vg.addColorStop(0, 'rgba(5,3,12,0)');
+      vg.addColorStop(0.14, dread ? 'rgba(30,4,16,0.6)' : 'rgba(8,5,18,0.55)');
+      vg.addColorStop(0.86, dread ? 'rgba(30,4,16,0.6)' : 'rgba(8,5,18,0.55)');
+      vg.addColorStop(1, 'rgba(5,3,12,0)');
+      ctx.fillStyle = vg; ctx.fillRect(cx - vw / 2, cy - vh / 2, vw, vh);
+      // split edges — a bracket snapping shut
+      ctx.lineWidth = 1.4 * hs;
+      ctx.strokeStyle = VIOLET + (0.5 * A).toFixed(2) + ')';
+      ctx.beginPath(); ctx.moveTo(cx - vw / 2 - conv * 14 * hs, cy - vh / 2); ctx.lineTo(cx - vw / 2 + 10 * hs - conv * 14 * hs, cy - vh / 2);
+      ctx.lineTo(cx - vw / 2 - conv * 14 * hs, cy + vh / 2); ctx.stroke();
+      ctx.strokeStyle = TEAL + (0.5 * A).toFixed(2) + ')';
+      ctx.beginPath(); ctx.moveTo(cx + vw / 2 + conv * 14 * hs, cy - vh / 2); ctx.lineTo(cx + vw / 2 - 10 * hs + conv * 14 * hs, cy - vh / 2);
+      ctx.lineTo(cx + vw / 2 + conv * 14 * hs, cy + vh / 2); ctx.stroke();
+      var px = Math.floor((opts.px || 24) * hs * 0.85);
+      ctx.font = 'bold ' + px + "px 'Share Tech Mono',monospace";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      if (conv > 0.02) {
+        ctx.fillStyle = VIOLET + (0.5 * conv * A).toFixed(2) + ')'; ctx.fillText(String(wa.text || ''), cx - 3 * hs * conv, cy);
+        ctx.fillStyle = TEAL + (0.5 * conv * A).toFixed(2) + ')';   ctx.fillText(String(wa.text || ''), cx + 3 * hs * conv, cy);
+      }
+      ctx.shadowColor = dread ? 'rgba(255,70,110,0.9)' : 'rgba(0,255,204,0.8)'; ctx.shadowBlur = 10;
+      ctx.fillStyle = dread ? 'rgba(255,190,210,0.95)' : 'rgba(235,255,250,0.95)';
+      ctx.fillText(String(wa.text || ''), cx, cy);
+      if (wa.subtext) {
+        ctx.shadowBlur = 5; ctx.font = 'bold ' + Math.floor(8.5 * hs) + "px 'Share Tech Mono',monospace";
+        ctx.fillStyle = 'rgba(200,230,255,0.8)';
+        ctx.fillText(String(wa.subtext), cx, cy + 17 * hs);
+      }
+      ctx.restore();
+    },
+
+    // ── OBJECTIVE: a phase-dart — the target marker flickers between states ──
+    objArrow: function (ctx, tgt, o) {
+      var hs = o.hs || 1, s = o.s || 1, pu = o.pulse || 0.7;
+      var t = o.ot || 0;
+      var phased = Math.sin(t * 7) > 0.75;   // blinks in and out of phase
+      ctx.save();
+      ctx.translate(o.ax, o.ay); ctx.rotate(o.ang);
+      ctx.globalAlpha = Math.min(1, pu + 0.2) * (phased ? 0.45 : 1);
+      // afterimage chevrons trailing behind
+      for (var d = 1; d <= 3; d++) {
+        ctx.strokeStyle = (d % 2 ? VIOLET : TEAL) + (0.35 / d * pu).toFixed(2) + ')';
+        ctx.lineWidth = 1.6 * s;
+        ctx.beginPath();
+        ctx.moveTo(-10 * s - d * 7 * s, -5 * s); ctx.lineTo(-14 * s - d * 7 * s, 0); ctx.lineTo(-10 * s - d * 7 * s, 5 * s);
+        ctx.stroke();
+      }
+      // head dart with chromatic rim
+      var g = ctx.createLinearGradient(-8 * s, 0, 15 * s, 0);
+      g.addColorStop(0, VIOLET + '0.25)'); g.addColorStop(0.55, TEAL + '0.8)'); g.addColorStop(1, 'rgba(240,255,250,0.95)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.moveTo(15 * s, 0); ctx.lineTo(-4 * s, -7 * s); ctx.lineTo(0, 0); ctx.lineTo(-4 * s, 7 * s); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = VIOLET + '0.7)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.5 + 0.35 * pu).toFixed(2) + ')';
+      ctx.beginPath(); ctx.arc(8 * s, 0, 1.5 * s, 0, 6.2832); ctx.fill();
+      ctx.restore();
+      ctx.save();
+      ctx.globalAlpha = 0.85 + pu * 0.15;
+      ctx.font = 'bold ' + Math.floor(10 * hs) + "px 'Share Tech Mono',monospace";
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(0,255,204,0.8)'; ctx.shadowBlur = 6;
+      ctx.fillStyle = 'rgba(225,255,245,0.92)';
+      ctx.fillText(String(tgt.label || '') + ' \u00B7 ' + Math.round(o.dist || 0) + 'u', o.lx, o.ly + 3);
+      ctx.restore();
+    }
+  };
+
+  // ══════════════════ THE INSTRUMENTS ══════════════════
+  // PHASE RESONATOR — hull as a quartz ring whose shards break away
+  function phResonator(c, x, y, R, pct, hp, hpMax, t, hs, shake, warn) {
+    c.save();
+    if (shake > 0) c.translate(Math.sin(t * 60) * shake * 3 * hs, Math.cos(t * 54) * shake * 2.4 * hs);
+    c.translate(x, y);
+    // outer bezel: rotating conic metal
+    c.save(); c.rotate(t * 0.25);
+    for (var b = 0; b < 16; b++) {
+      var a0 = b / 16 * 6.2832, a1 = (b + 0.62) / 16 * 6.2832;
+      c.strokeStyle = b % 2 ? 'rgba(60,44,110,0.85)' : 'rgba(24,16,48,0.9)';
+      c.lineWidth = 4 * hs;
+      c.beginPath(); c.arc(0, 0, R + 5 * hs, a0, a1); c.stroke();
+    }
+    c.restore();
+    // crystal face
+    var fg = c.createRadialGradient(-R * 0.3, -R * 0.35, R * 0.1, 0, 0, R * 0.92);
+    fg.addColorStop(0, 'rgba(28,18,52,0.95)'); fg.addColorStop(0.7, 'rgba(10,6,24,0.96)'); fg.addColorStop(1, 'rgba(4,2,12,1)');
+    c.fillStyle = fg; c.beginPath(); c.arc(0, 0, R * 0.92, 0, 6.2832); c.fill();
+    // hull arc — teal core, reddening under 30%
+    var col = pct < 0.3 ? 'rgba(255,90,130,' : TEAL;
+    var a0 = -Math.PI * 0.75, sweep = Math.PI * 1.5;
+    c.lineCap = 'round';
+    c.strokeStyle = 'rgba(120,90,200,0.18)'; c.lineWidth = 6 * hs;
+    c.beginPath(); c.arc(0, 0, R * 0.78, a0, a0 + sweep); c.stroke();
+    c.shadowColor = col + '0.9)'; c.shadowBlur = 9;
+    c.strokeStyle = col + '0.9)'; c.lineWidth = 4.5 * hs;
+    c.beginPath(); c.arc(0, 0, R * 0.78, a0, a0 + sweep * pct); c.stroke();
+    c.shadowBlur = 0;
+    // SHARDS: segments of an inner ring that break away as HP drops
+    var total = 10, alive = Math.ceil(pct * total);
+    for (var i = 0; i < total; i++) {
+      var sa = a0 + (i / total) * sweep, ea = a0 + ((i + 0.72) / total) * sweep;
+      if (i < alive) {
+        c.strokeStyle = col + '0.75)'; c.lineWidth = 2.2 * hs;
+        c.beginPath(); c.arc(0, 0, R * 0.56, sa, ea); c.stroke();
+      } else {
+        // broken shard tumbling away, fading
+        var bu = ((t * 0.5 + i * 0.17) % 1);
+        var mid = (sa + ea) / 2;
+        var bx = Math.cos(mid) * (R * 0.56 + bu * R * 0.5), by = Math.sin(mid) * (R * 0.56 + bu * R * 0.5);
+        c.save(); c.translate(bx, by); c.rotate(mid + bu * 3);
+        c.fillStyle = VIOLET + (0.35 * (1 - bu)).toFixed(2) + ')';
+        c.beginPath(); c.moveTo(-2.4 * hs, 0); c.lineTo(0, -3.4 * hs); c.lineTo(2.4 * hs, 0); c.closePath(); c.fill();
+        c.restore();
+      }
+    }
+    // resonance hum arc — a thin counter-rotating harmonic
+    c.save(); c.rotate(-t * 0.8);
+    c.setLineDash([2 * hs, 6 * hs]);
+    c.strokeStyle = VIOLET + '0.4)'; c.lineWidth = 1.2 * hs;
+    c.beginPath(); c.arc(0, 0, R * 0.4, 0, 6.2832); c.stroke();
+    c.setLineDash([]); c.restore();
+    // core readout
+    P_lab(c, String(Math.max(0, Math.ceil(hp))), 0, -R * 0.06, Math.floor(R * 0.44), 'center', TEAL, 0.95);
+    P_lab(c, '/' + Math.round(hpMax), 0, R * 0.24, Math.floor(R * 0.2), BONE, 0.5);
+    P_lab(c, 'RESONANCE', 0, -R * 0.34, Math.floor(R * 0.16), VIOLET, 0.55);
+    // warning word blinks below the ring
+    if (warn) {
+      var blink = 0.55 + 0.45 * Math.sin(t * 6);
+      P_lab(c, warn, 0, R + 15 * hs, Math.floor(7.5 * hs), 'rgba(255,110,150,', blink);
+    }
+    // glass glare
+    var gl = c.createLinearGradient(-R * 0.6, -R * 0.8, R * 0.3, R * 0.2);
+    gl.addColorStop(0, 'rgba(255,255,255,0.09)'); gl.addColorStop(0.5, 'rgba(255,255,255,0.02)'); gl.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = gl; c.beginPath(); c.arc(0, 0, R * 0.9, 0, 6.2832); c.fill();
+    c.restore();
+  }
+  // FRACTURE ARC — heat as cracking strokes wrapping the resonator
+  function phHeatArc(c, x, y, R, heat, lock, t, hs) {
+    if (heat < 0.5) return;
+    var hr = R + 14 * hs, a0 = -Math.PI * 0.75, sweep = Math.PI * 1.5;
+    var col = lock ? 'rgba(255,51,68,' : (heat > 70 ? 'rgba(255,170,0,' : (heat > 40 ? 'rgba(255,210,127,' : TEAL));
+    c.save();
+    c.strokeStyle = 'rgba(255,140,60,0.1)'; c.lineWidth = 5 * hs;
+    c.beginPath(); c.arc(x, y, hr, a0, a0 + sweep); c.stroke();
+    c.shadowColor = col + '0.9)'; c.shadowBlur = lock ? 12 : 6;
+    c.strokeStyle = col + '0.85)'; c.lineWidth = 3.4 * hs;
+    c.beginPath(); c.arc(x, y, hr, a0, a0 + sweep * (heat / 100)); c.stroke();
+    c.shadowBlur = 0;
+    // crack sparks walking the hot part of the arc
+    if (heat > 12) {
+      for (var i = 0; i < 3; i++) {
+        var u = ((t * 0.35 + i / 3) % 1) * (heat / 100);
+        var aa = a0 + sweep * u;
+        c.globalAlpha = 0.25 + 0.25 * Math.sin(t * 8 + i * 2);
+        P_crack(c, x + Math.cos(aa) * hr, y + Math.sin(aa) * hr, aa, 7 * hs, i * 13.7 + Math.floor(t * 2), 3, hs, 0.4);
+        c.globalAlpha = 1;
+      }
+    }
+    // vent steam puffs rising off the arc at high heat
+    if (heat > 55) {
+      for (var sp = 0; sp < 2; sp++) {
+        var su = ((t * 0.4 + sp * 0.5) % 1);
+        var saa = a0 + sweep * P_cl(heat / 100 - su * 0.2, 0, 1);
+        c.fillStyle = BONE + (0.07 * (1 - su)).toFixed(3) + ')';
+        c.beginPath();
+        c.arc(x + Math.cos(saa) * (hr + su * 22 * hs), y + Math.sin(saa) * (hr + su * 22 * hs) - su * 10 * hs, (3 + su * 9) * hs, 0, 6.2832);
+        c.fill();
+      }
+    }
+    if (lock) P_lab(c, 'MELTDOWN', x, y - hr - 12 * hs, Math.floor(8 * hs), 'rgba(255,80,90,', 0.5 + 0.5 * Math.sin(t * 10));
+    c.restore();
+  }
+  // VOID CELL — anti-light battery: bright charge suspended in a dark column
+  function phVoidCell(c, x, y, w, h, fpct, refuel, flameout, t, hs) {
+    c.save();
+    P_metal(c, x - 3 * hs, y - 14 * hs, w + 6 * hs, h + 26 * hs, 4);
+    P_lab(c, 'VOID', x + w / 2, y - 8 * hs, Math.floor(6 * hs), VIOLET, 0.6);
+    // cell cavity
+    c.fillStyle = 'rgba(2,1,8,0.95)';
+    c.fillRect(x, y, w, h);
+    // the charge itself rises from the bottom
+    var lh = h * fpct;
+    var cg = c.createLinearGradient(0, y + h - lh, 0, y + h);
+    cg.addColorStop(0, TEAL + '0.85)'); cg.addColorStop(0.5, 'rgba(120,255,230,0.7)'); cg.addColorStop(1, VIOLET + '0.6)');
+    if (flameout) cg.addColorStop(0, 'rgba(255,80,110,0.6)');
+    c.fillStyle = cg;
+    var flick = flameout ? (0.5 + 0.5 * Math.sin(t * 17)) : 1;
+    c.globalAlpha = flick;
+    c.fillRect(x + 1.5 * hs, y + h - lh, w - 3 * hs, lh);
+    c.globalAlpha = 1;
+    // meniscus glow line at the charge surface
+    if (lh > 2) {
+      var my = y + h - lh;
+      c.shadowColor = TEAL + '0.9)'; c.shadowBlur = 7;
+      c.strokeStyle = 'rgba(220,255,245,0.9)'; c.lineWidth = 1.4 * hs;
+      c.beginPath(); c.moveTo(x + 1.5 * hs, my); c.lineTo(x + w - 1.5 * hs, my); c.stroke();
+      c.shadowBlur = 0;
+      // rising bubbles while refuelling
+      if (refuel) {
+        for (var b = 0; b < 3; b++) {
+          var bu = ((t * 0.6 + b * 0.33) % 1);
+          var bx = x + w * (0.25 + P_R(b * 7.7) * 0.5);
+          var by = y + h - bu * lh;
+          c.fillStyle = BONE + (0.5 * (1 - bu)).toFixed(2) + ')';
+          c.beginPath(); c.arc(bx, by, 1.2 * hs, 0, 6.2832); c.fill();
+        }
+      }
+    }
+    // graduation ticks down the side
+    for (var g2 = 0; g2 <= 4; g2++) {
+      var gy = y + h - (g2 / 4) * h;
+      c.strokeStyle = BONE + '0.25)'; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(x + w, gy); c.lineTo(x + w + 3 * hs, gy); c.stroke();
+    }
+    // glass sheen
+    var sg = c.createLinearGradient(x, 0, x + w, 0);
+    sg.addColorStop(0, 'rgba(255,255,255,0.12)'); sg.addColorStop(0.3, 'rgba(255,255,255,0.02)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = sg; c.fillRect(x, y, w, h);
+    P_lab(c, Math.round(fpct * 100) + '%', x + w / 2, y + h + 7 * hs, Math.floor(6.5 * hs), fpct < 0.25 ? 'rgba(255,110,150,' : TEAL, 0.8);
+    c.restore();
+  }
+  // PHASE ANCHORS — two focus capacitor drums; returns the tap zone
+  function phAnchors(c, x, y, hs, ch, ft, t) {
+    c.save();
+    var w = 36 * hs, h = 52 * hs;
+    P_metal(c, x - 4 * hs, y - 4 * hs, w + 8 * hs, h + 8 * hs, 5);
+    P_lab(c, 'ANCHOR', x + w / 2, y - 10 * hs, Math.floor(6 * hs), VIOLET, 0.6);
+    var full = ch >= 2, frac = ch >= 1 ? P_cl(ft / 60, 0, 1) : 0;   // partial regen shimmer
+    for (var i = 0; i < 2; i++) {
+      var dx = x + i * (w / 2 + 2 * hs), dw = w / 2 - 4 * hs;
+      var charged = ch > i;
+      // drum body
+      c.fillStyle = 'rgba(3,2,10,0.95)';
+      c.fillRect(dx, y + 4 * hs, dw, h - 8 * hs);
+      if (charged) {
+        var cg = c.createLinearGradient(0, y + h, 0, y);
+        cg.addColorStop(0, VIOLET + '0.75)'); cg.addColorStop(1, TEAL + '0.85)');
+        c.fillStyle = cg;
+        c.fillRect(dx + 1.5 * hs, y + 6 * hs, dw - 3 * hs, h - 12 * hs);
+        // charge shimmer band sliding up
+        var shm = (t * 0.7 + i * 0.4) % 1;
+        c.fillStyle = BONE + '0.25)';
+        c.fillRect(dx + 1.5 * hs, y + 6 * hs + (1 - shm) * (h - 14 * hs), dw - 3 * hs, 4 * hs);
+        // terminal knobs
+        P_glowDot(c, dx + dw / 2, y + 2 * hs, 1.8 * hs, TEAL);
+      } else {
+        // drained: drain flicker right after firing (ft just reset), else dark cells
+        var fl = (i === ch - 1 && ft < 12) ? (0.3 + 0.4 * Math.sin(t * 20)) : 0;
+        if (fl > 0) { c.fillStyle = VIOLET + fl.toFixed(2) + ')'; c.fillRect(dx + 1.5 * hs, y + 6 * hs, dw - 3 * hs, h - 12 * hs); }
+        // empty hatch marks
+        c.strokeStyle = BONE + '0.12)'; c.lineWidth = 1;
+        for (var ln = 0; ln < 4; ln++) {
+          c.beginPath(); c.moveTo(dx + 2 * hs, y + 8 * hs + ln * 10 * hs); c.lineTo(dx + dw - 2 * hs, y + 8 * hs + ln * 10 * hs); c.stroke();
+        }
+        // partial regen ghost-fill on the next anchor to fire
+        if (i === ch && ch < 2 && frac > 0) {
+          c.fillStyle = TEAL + '0.18)';
+          c.fillRect(dx + 1.5 * hs, y + h - 6 * hs - frac * (h - 12 * hs), dw - 3 * hs, frac * (h - 12 * hs));
+        }
+      }
+      // bezel split rim
+      c.strokeStyle = charged ? TEAL + '0.5)' : 'rgba(90,70,150,0.4)';
+      c.lineWidth = 1.2 * hs;
+      c.strokeRect(dx, y + 4 * hs, dw, h - 8 * hs);
+    }
+    c.restore();
+    return [x - 6 * hs, y - 6 * hs, w + 12 * hs, h + 12 * hs];
+  }
+  // PHANTOM GAUGE — i-frame halo, FORM cooldown ring, ghost-ally vitals pip
+  function phPhantomGauge(c, x, y, R, hs, t) {
+    c.save();
+    var ifr = 0, ult = 0, ultMax = 360, gAlly = null;
+    try { ifr = P_cl((player._gsIFrames || 0) / 60, 0, 1); } catch (e) {}
+    try { ult = P_cl(player.ghostUltTimer || 0, 0, ultMax); } catch (e) {}
+    try { gAlly = window._gsGhost || null; } catch (e) {}
+    var active = ult > 0;
+    var cd = 1 - ult / ultMax;                     // 0 = ready now
+    // base plate
+    c.fillStyle = 'rgba(4,2,12,0.85)';
+    c.beginPath(); c.arc(x, y, R + 4 * hs, 0, 6.2832); c.fill();
+    c.strokeStyle = 'rgba(90,70,150,0.5)'; c.lineWidth = 1.4 * hs;
+    c.beginPath(); c.arc(x, y, R + 4 * hs, 0, 6.2832); c.stroke();
+    // cooldown ring: fills clockwise toward READY
+    var a0 = -Math.PI / 2;
+    c.strokeStyle = VIOLET + '0.25)'; c.lineWidth = 3 * hs;
+    c.beginPath(); c.arc(x, y, R, a0, a0 + 6.2832); c.stroke();
+    c.strokeStyle = active ? 'rgba(200,255,240,' : (cd >= 1 ? TEAL : VIOLET);
+    c.lineWidth = 3 * hs;
+    c.shadowColor = (active ? 'rgba(200,255,240,' : (cd >= 1 ? TEAL : VIOLET)) + '0.9)'; c.shadowBlur = active ? 12 : 5;
+    c.beginPath(); c.arc(x, y, R, a0, a0 + 6.2832 * (active ? ult / ultMax : cd)); c.stroke();
+    c.shadowBlur = 0;
+    // core sigil — a fading silhouette diamond
+    var pulse = 0.5 + 0.5 * Math.sin(t * (active ? 9 : 2));
+    c.save(); c.translate(x, y); c.rotate(Math.PI / 4);
+    c.strokeStyle = active ? 'rgba(220,255,245,' + (0.6 + 0.4 * pulse).toFixed(2) + ')' : (cd >= 1 ? TEAL + '0.8)' : TEAL + '0.3)');
+    c.lineWidth = 1.6 * hs;
+    c.strokeRect(-R * 0.32, -R * 0.32, R * 0.64, R * 0.64);
+    c.restore();
+    // i-frame halo: white-violet ring flaring while invincible
+    if (ifr > 0) {
+      c.strokeStyle = BONE + (0.3 + 0.5 * ifr).toFixed(2) + ')';
+      c.lineWidth = 2 * hs;
+      c.beginPath(); c.arc(x, y, R * (1.15 + 0.25 * (1 - ifr)), 0, 6.2832); c.stroke();
+    }
+    // status text
+    P_lab(c, active ? 'FORM' : (cd >= 1 ? 'READY' : Math.ceil((ultMax - ult) / 60) + 's'), x, y + R + 11 * hs, Math.floor(6.5 * hs), active ? BONE : (cd >= 1 ? TEAL : VIOLET), 0.8);
+    // ghost ally vitals pip below
+    if (gAlly) {
+      var gy = y + R + 22 * hs;
+      if (!gAlly.dead) {
+        var gpct = P_cl((gAlly.health || 0) / Math.max(1, gAlly.maxHealth || 1), 0, 1);
+        P_glowDot(c, x - 12 * hs, gy, 2 * hs, TEAL);
+        c.strokeStyle = 'rgba(60,50,110,0.8)'; c.lineWidth = 2.5 * hs;
+        c.beginPath(); c.moveTo(x - 6 * hs, gy); c.lineTo(x + 14 * hs, gy); c.stroke();
+        c.strokeStyle = gpct < 0.3 ? 'rgba(255,110,150,0.9)' : TEAL + '0.9)';
+        c.beginPath(); c.moveTo(x - 6 * hs, gy); c.lineTo(x - 6 * hs + 20 * hs * gpct, gy); c.stroke();
+        P_lab(c, 'ALLY', x + 24 * hs, gy, Math.floor(5.5 * hs), TEAL, 0.55);
+      } else {
+        var rs = Math.max(0, Math.ceil((gAlly.respawnT || 0) / 60));
+        P_lab(c, 'DOWN ' + rs + 's', x, gy, Math.floor(6 * hs), 'rgba(255,140,100,', 0.5 + 0.3 * Math.sin(t * 5));
+      }
+    } else {
+      P_lab(c, 'NO ALLY', x, y + R + 22 * hs, Math.floor(5.5 * hs), VIOLET, 0.35);
+    }
+    c.restore();
+  }
+  // GRAZE SOLVER — the radar dial: 32-heading solver, sweep, enemy cells
+  function phGrazeSolver(c, x, y, R, hs, t) {
+    c.save();
+    c.translate(x, y);
+    // housing ring
+    c.strokeStyle = 'rgba(70,50,130,0.7)'; c.lineWidth = 3 * hs;
+    c.beginPath(); c.arc(0, 0, R + 3 * hs, 0, 6.2832); c.stroke();
+    // 32 solver headings — tick marks; safe headings brighten in sequence
+    for (var i = 0; i < 32; i++) {
+      var a = i / 32 * 6.2832;
+      var lit = Math.floor(((t * 8) % 32)) === i;
+      c.strokeStyle = lit ? TEAL + '0.8)' : BONE + '0.16)';
+      c.lineWidth = lit ? 2 * hs : 1 * hs;
+      c.beginPath();
+      c.moveTo(Math.cos(a) * (R - 4 * hs), Math.sin(a) * (R - 4 * hs));
+      c.lineTo(Math.cos(a) * R, Math.sin(a) * R);
+      c.stroke();
+    }
+    // crosshair rings
+    c.strokeStyle = VIOLET + '0.25)'; c.lineWidth = 1;
+    c.beginPath(); c.arc(0, 0, R * 0.6, 0, 6.2832); c.stroke();
+    c.beginPath(); c.arc(0, 0, R * 0.3, 0, 6.2832); c.stroke();
+    // sweep arm
+    var sa = t * 1.6;
+    var sg = c.createLinearGradient(0, 0, Math.cos(sa) * R, Math.sin(sa) * R);
+    sg.addColorStop(0, TEAL + '0.4)'); sg.addColorStop(1, TEAL + '0)');
+    c.strokeStyle = sg; c.lineWidth = 2 * hs;
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(sa) * R, Math.sin(sa) * R); c.stroke();
+    // enemy cells (off-screen threats only — same gate frost uses)
+    try {
+      if (typeof enemies !== 'undefined' && typeof player !== 'undefined') {
+        var zm = window._curCamZoom || 1, mg = 46 * hs, off = [];
+        for (var ei = 0; ei < enemies.length; ei++) {
+          var en = enemies[ei]; if (!en || en.hp <= 0) continue;
+          var esx = (en.x - player.x) * zm, esy = (en.y - player.y) * zm;
+          if (Math.abs(esx) > canvas.width / 2 - mg || Math.abs(esy) > canvas.height / 2 - mg) off.push([esx, esy]);
+        }
+        var span = 1600;
+        for (var oi = 0; oi < Math.min(off.length, 10); oi++) {
+          var ox = P_cl(off[oi][0] / span, -1, 1) * R * 0.85;
+          var oy = P_cl(off[oi][1] / span, -1, 1) * R * 0.85;
+          var near = Math.hypot(off[oi][0], off[oi][1]) < 500;
+          P_dot(c, ox, oy, (near ? 2 : 1.4) * hs, near ? 'rgba(255,90,130,' : VIOLET, near ? 0.9 : 0.6);
+        }
+        try {
+          if (typeof bossActive !== 'undefined' && bossActive && typeof boss !== 'undefined' && boss && boss.hp > 0) {
+            var bsx = P_cl((boss.x - player.x) / span, -1, 1) * R * 0.85;
+            var bsy = P_cl((boss.y - player.y) / span, -1, 1) * R * 0.85;
+            c.fillStyle = 'rgba(255,60,84,0.9)';
+            c.beginPath(); c.moveTo(bsx, bsy - 3 * hs); c.lineTo(bsx + 3 * hs, bsy + 2 * hs); c.lineTo(bsx - 3 * hs, bsy + 2 * hs); c.closePath(); c.fill();
+          }
+        } catch (e2) {}
+      }
+    } catch (e) {}
+    // own ship at centre
+    P_glowDot(c, 0, 0, 1.6 * hs, TEAL);
+    P_lab(c, 'GRAZE SOLVER', 0, -R - 10 * hs, Math.floor(6 * hs), VIOLET, 0.5);
+    c.restore();
+  }
+  // DIM-SLICE CHART — minimap as a slice of the void facility
+  function phDimSlice(c, x, y, R, hs, t, port) {
+    c.save();
+    // hex frame
+    c.beginPath();
+    for (var hx = 0; hx < 6; hx++) {
+      var ha = hx / 6 * 6.2832 - Math.PI / 2;
+      var px = x + Math.cos(ha) * (R + 4 * hs), py = y + Math.sin(ha) * (R + 4 * hs);
+      if (hx === 0) c.moveTo(px, py); else c.lineTo(px, py);
+    }
+    c.closePath();
+    c.fillStyle = 'rgba(3,2,10,0.88)'; c.fill();
+    c.strokeStyle = VIOLET + '0.45)'; c.lineWidth = 1.6 * hs; c.stroke();
+    c.save(); c.clip();
+    var rooms = null; try { rooms = window.mapRooms; } catch (e) {}
+    try {
+      if (rooms && rooms.length && typeof player !== 'undefined') {
+        var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (var ri = 0; ri < rooms.length; ri++) {
+          var rm = rooms[ri]; if (!rm) continue;
+          var rw = (rm.type === 'hallway') ? Math.abs(rm.x2 - rm.x) : (rm.size || 100);
+          var rh = (rm.type === 'hallway') ? Math.abs(rm.y2 - rm.y) : (rm.size || 100);
+          minX = Math.min(minX, rm.x - rw / 2 - 20); maxX = Math.max(maxX, rm.x + rw / 2 + 20);
+          minY = Math.min(minY, rm.y - rh / 2 - 20); maxY = Math.max(maxY, rm.y + rh / 2 + 20);
+        }
+        var sc = (R * 1.7) / Math.max(1, Math.max(maxX - minX, maxY - minY));
+        var cxm = (minX + maxX) / 2, cym = (minY + maxY) / 2;
+        var tx = function (wx) { return x + (wx - cxm) * sc; }, ty = function (wy) { return y + (wy - cym) * sc; };
+        for (var ri2 = 0; ri2 < rooms.length; ri2++) {
+          var rm2 = rooms[ri2]; if (!rm2) continue;
+          var vis = true; try { vis = !window._discoveredRooms || window._discoveredRooms[rm2.id] !== false || rm2.type === 'hallway'; } catch (e3) {}
+          if (rm2.type === 'hallway') {
+            c.strokeStyle = TEAL + (vis ? '0.3)' : '0.08)'); c.lineWidth = Math.max(1, (rm2.width || 40) * sc * 0.5);
+            c.beginPath(); c.moveTo(tx(rm2.x), ty(rm2.y)); c.lineTo(tx(rm2.x2), ty(rm2.y2)); c.stroke();
+          } else {
+            var sz = (rm2.size || 100) * sc;
+            c.fillStyle = vis ? 'rgba(30,20,60,0.8)' : 'rgba(12,8,26,0.5)';
+            c.strokeStyle = vis ? VIOLET + '0.4)' : VIOLET + '0.12)';
+            c.lineWidth = 1;
+            c.beginPath();
+            if (rm2.type === 'circle') c.arc(tx(rm2.x), ty(rm2.y), sz / 2, 0, 6.2832);
+            else c.rect(tx(rm2.x) - sz / 2, ty(rm2.y) - sz / 2, sz, sz);
+            c.fill(); c.stroke();
+          }
+        }
+        // enemies as dim red motes
+        try {
+          if (typeof enemies !== 'undefined') {
+            for (var eI = 0; eI < Math.min(enemies.length, 40); eI++) {
+              var en2 = enemies[eI]; if (!en2 || en2.hp <= 0) continue;
+              P_dot(c, tx(en2.x), ty(en2.y), 1.1 * hs, 'rgba(255,90,130,', 0.6);
+            }
+          }
+        } catch (e4) {}
+        // ghost ally twin
+        try {
+          if (window._gsGhost && !window._gsGhost.dead) {
+            P_dot(c, tx(window._gsGhost.x), ty(window._gsGhost.y), 1.6 * hs, TEAL, 0.5 + 0.3 * Math.sin(t * 4));
+            c.strokeStyle = TEAL + '0.2)'; c.setLineDash([2, 4]);
+            c.beginPath(); c.moveTo(tx(player.x), ty(player.y)); c.lineTo(tx(window._gsGhost.x), ty(window._gsGhost.y)); c.stroke();
+            c.setLineDash([]);
+          }
+        } catch (e5) {}
+        // you: a bright phase spark with a ping ring
+        P_glowDot(c, tx(player.x), ty(player.y), 2 * hs, BONE);
+        var ping = (t * 0.8) % 1;
+        c.strokeStyle = TEAL + (0.5 * (1 - ping)).toFixed(2) + ')';
+        c.beginPath(); c.arc(tx(player.x), ty(player.y), 2 * hs + ping * 12 * hs, 0, 6.2832); c.stroke();
+      } else {
+        P_lab(c, 'SCANNING VOID…', x, y, Math.floor(7 * hs), VIOLET, 0.4 + 0.2 * Math.sin(t * 3));
+      }
+    } catch (e) {}
+    c.restore();
+    P_lab(c, 'DIM SLICE', x, y - R - 9 * hs, Math.floor(6 * hs), VIOLET, 0.5);
+    c.restore();
+  }
+  // XP TIDE — a luminous tide filling along the deck lip
+  function phXpTide(c, W, conTop, t, hs) {
+    var pct = 0, lvl = 1;
+    try { pct = P_cl(xp / Math.max(1, level * 4), 0, 1); lvl = level; } catch (e) {}
+    var y = conTop + 14 * hs;
+    c.save();
+    c.fillStyle = 'rgba(2,1,8,0.8)'; c.fillRect(0, y, W, 3 * hs);
+    var g = c.createLinearGradient(0, 0, W * pct, 0);
+    g.addColorStop(0, VIOLET + '0.7)'); g.addColorStop(1, TEAL + '0.9)');
+    c.fillStyle = g; c.fillRect(0, y, W * pct, 3 * hs);
+    // foam sparkles at the tide edge
+    if (pct > 0.02) {
+      var ex = W * pct;
+      for (var fs = 0; fs < 3; fs++) {
+        c.fillStyle = BONE + (0.3 + 0.3 * Math.sin(t * 6 + fs * 2)).toFixed(2) + ')';
+        c.beginPath(); c.arc(ex - fs * 3 * hs, y + 1.5 * hs + Math.sin(t * 5 + fs) * hs, 0.9 * hs, 0, 6.2832); c.fill();
+      }
+      c.shadowColor = TEAL + '0.8)'; c.shadowBlur = 6;
+      c.fillStyle = 'rgba(230,255,245,0.9)';
+      c.fillRect(ex - 1.5 * hs, y - 0.5 * hs, 1.5 * hs, 4 * hs);
+      c.shadowBlur = 0;
+    }
+    P_lab(c, 'LV ' + lvl, W * 0.5 + 140 * hs, y + 1.5 * hs, Math.floor(5.5 * hs), TEAL, 0.5);
+    c.restore();
+  }
+  // RANK PLATE — machined badge on the deck
+  function phRankPlate(c, x, conTop, hs, t, lvl) {
+    c.save();
+    var w = 56 * hs, h = 22 * hs, y = conTop + 22 * hs;
+    P_metal(c, x - w / 2, y, w, h, 4);
+    P_split(c, function (cc) { cc.beginPath(); cc.rect(x - w / 2 + 2 * hs, y + 2 * hs, w - 4 * hs, h - 4 * hs); }, 1, 0.35, t);
+    P_lab(c, 'RANK', x, y + 7 * hs, Math.floor(6 * hs), VIOLET, 0.55);
+    P_lab(c, String(lvl), x, y + 15.5 * hs, Math.floor(9 * hs), TEAL, 0.9);
+    c.restore();
+  }
+  // CHRONO — mission time in a round gauge with a second-hand orbit
+  function phChrono(c, x, conTop, hs, t) {
+    c.save();
+    var y = conTop + 33 * hs, R = 13 * hs;
+    c.fillStyle = 'rgba(3,2,10,0.9)';
+    c.beginPath(); c.arc(x, y, R, 0, 6.2832); c.fill();
+    c.strokeStyle = 'rgba(90,70,150,0.6)'; c.lineWidth = 1.6 * hs;
+    c.beginPath(); c.arc(x, y, R, 0, 6.2832); c.stroke();
+    var secs = 0; try { secs = window.nhMissionSecs ? window.nhMissionSecs(t) : Math.floor(t); } catch (e) {}
+    var mm = Math.floor(secs / 60), ss = secs % 60;
+    P_lab(c, (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss, x, y + 1, Math.floor(7 * hs), BONE, 0.8);
+    // second-hand orbit dot
+    var a = -Math.PI / 2 + (ss / 60) * 6.2832;
+    P_dot(c, x + Math.cos(a) * (R - 2.5 * hs), y + Math.sin(a) * (R - 2.5 * hs), 1.2 * hs, TEAL, 0.8);
+    c.restore();
+  }
+  // BUFF WISPS — small drifting lights tagged with buff codes
+  function phBuffs(c, W, conTop, hs, t) {
+    var tags = [];
+    try {
+      if (typeof teslaAura !== 'undefined' && teslaAura) tags.push('TSL');
+      if (typeof droneCount !== 'undefined' && droneCount > 0) tags.push('DRN');
+      if (typeof shieldActive !== 'undefined' && shieldActive) tags.push('SHD');
+      if (typeof plasmaFieldActive !== 'undefined' && plasmaFieldActive) tags.push('PLS');
+      if (typeof homingActive !== 'undefined' && homingActive) tags.push('HOM');
+      if (typeof frostShot !== 'undefined' && frostShot) tags.push('FRS');
+      if (typeof vampirism !== 'undefined' && vampirism > 0) tags.push('VMP');
+      if (typeof berserkerMode !== 'undefined' && berserkerMode) tags.push('BRK');
+    } catch (e) {}
+    if (!tags.length) return;
+    c.save();
+    var x0 = W / 2 - 150 * hs, y0 = conTop + 30 * hs;
+    for (var i = 0; i < Math.min(tags.length, 8); i++) {
+      var wx = x0 + i * 20 * hs, wy = y0 + Math.sin(t * 2 + i * 1.3) * 3 * hs;
+      var isTeal = i % 2 === 0;
+      var g = c.createRadialGradient(wx, wy, 0.4, wx, wy, 7 * hs);
+      g.addColorStop(0, (isTeal ? TEAL : VIOLET) + '0.5)'); g.addColorStop(1, (isTeal ? TEAL : VIOLET) + '0)');
+      c.fillStyle = g; c.beginPath(); c.arc(wx, wy, 7 * hs, 0, 6.2832); c.fill();
+      P_lab(c, tags[i], wx, wy - 10 * hs, Math.floor(5.5 * hs), isTeal ? TEAL : VIOLET, 0.7);
+    }
+    c.restore();
+  }
+  // THREATS — edge marks for off-screen hostiles + boss corona
+  function phThreats(c, W, H, hs, t) {
+    try {
+      if (typeof enemies === 'undefined' || typeof player === 'undefined') return;
+      var zm = window._curCamZoom || 1, mg = 46 * hs, off = [];
+      for (var ei = 0; ei < enemies.length; ei++) {
+        var en = enemies[ei]; if (!en || en.hp <= 0) continue;
+        var esx = (en.x - player.x) * zm + W / 2, esy = (en.y - player.y) * zm + H / 2;
+        if (esx < mg || esx > W - mg || esy < mg || esy > H - mg) off.push(en);
+      }
+      off.sort(function (a, b) { return Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y); });
+      off = off.slice(0, 6);
+      for (var oj = 0; oj < off.length; oj++) {
+        var en2 = off[oj];
+        var sx2 = (en2.x - player.x) * zm + W / 2, sy2 = (en2.y - player.y) * zm + H / 2;
+        var an = Math.atan2(sy2 - H / 2, sx2 - W / 2);
+        var ed = Math.min(W / 2 - mg, H / 2 - mg);
+        var ax2 = P_cl(W / 2 + Math.cos(an) * ed, mg, W - mg);
+        var ay2 = P_cl(H / 2 + Math.sin(an) * ed, mg, H - mg);
+        var dd = Math.hypot(en2.x - player.x, en2.y - player.y);
+        var str = P_cl(1 - dd / 1400, 0.3, 1);
+        c.save(); c.translate(ax2, ay2); c.rotate(an);
+        c.strokeStyle = 'rgba(255,90,130,' + (0.3 + 0.5 * str).toFixed(2) + ')';
+        c.lineWidth = 1.6 * hs;
+        c.beginPath(); c.moveTo(7 * hs, 0); c.lineTo(-3 * hs, -5 * hs); c.lineTo(-1 * hs, 0); c.lineTo(-3 * hs, 5 * hs); c.closePath(); c.stroke();
+        c.restore();
+      }
+      try {
+        if (typeof bossActive !== 'undefined' && bossActive && typeof boss !== 'undefined' && boss && boss.hp > 0) {
+          var bsx = (boss.x - player.x) * zm + W / 2, bsy = (boss.y - player.y) * zm + H / 2;
+          if (bsx < mg || bsx > W - mg || bsy < mg || bsy > H - mg) {
+            var ba = Math.atan2(bsy - H / 2, bsx - W / 2);
+            var bed = Math.min(W / 2 - mg, H / 2 - mg);
+            var bax = P_cl(W / 2 + Math.cos(ba) * bed, mg, W - mg), bay = P_cl(H / 2 + Math.sin(ba) * bed, mg, H - mg);
+            c.save(); c.translate(bax, bay); c.rotate(ba);
+            c.strokeStyle = 'rgba(255,60,84,0.9)'; c.lineWidth = 2.4 * hs;
+            c.beginPath(); c.moveTo(10 * hs, 0); c.lineTo(-4 * hs, -7 * hs); c.lineTo(-1 * hs, 0); c.lineTo(-4 * hs, 7 * hs); c.closePath(); c.stroke();
+            var pu = (t * 0.8) % 1;
+            c.strokeStyle = 'rgba(255,60,84,' + (0.5 * (1 - pu)).toFixed(2) + ')';
+            c.beginPath(); c.arc(0, 0, 8 * hs + pu * 14 * hs, 0, 6.2832); c.stroke();
+            c.restore();
+          }
+        }
+      } catch (e2) {}
+    } catch (e) {}
+  }
+})();
+</script>
 
 
 
