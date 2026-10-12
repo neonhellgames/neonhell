@@ -86400,6 +86400,7 @@ function _hideModifierBanner() {
   function P_R(n) { let x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
   var VIOLET = 'rgba(170,90,255,', TEAL = 'rgba(0,255,204,', BONE = 'rgba(232,244,255,';
   function P_lab(c, s, x, y, px, al, col, a) {
+    if (typeof col !== 'string') col = null;   // guard: alignment strings passed in the colour slot never crash indexOf
     c.save();
     c.font = 'bold ' + px + "px 'Share Tech Mono',monospace";
     c.textAlign = al || 'center'; c.textBaseline = 'middle';
@@ -86668,7 +86669,13 @@ function _hideModifierBanner() {
       }
       // nameplate centre-deck
       P_metal(c, W / 2 - 62 * hs, conTop + 4 * hs, 124 * hs, 11 * hs, 3);
-      P_lab(c, 'PHM-IX INTERDICTION CAB', W / 2, conTop + 9.6 * hs, Math.floor(6.5 * hs), 'center', TEAL, 0.55);
+      c.save();
+      c.font = "bold " + Math.floor(6.5 * hs) + "px 'Share Tech Mono',monospace";
+      c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.shadowColor = TEAL + '0.8)'; c.shadowBlur = 6;
+      c.fillStyle = TEAL + '0.55)';
+      c.fillText('PHM-IX INTERDICTION CAB', W / 2, conTop + 9.6 * hs);
+      c.restore();
     },
 
     // ── HUD: the instrument flight ──
@@ -86701,6 +86708,8 @@ function _hideModifierBanner() {
       phPhantomGauge(c, W - Math.floor(30 * hs), H - Math.floor(190 * hs), Math.floor(20 * hs), hs, t);
       // ── GRAZE SOLVER (radar dial, top-centre) ──
       phGrazeSolver(c, W / 2, Math.floor((port ? 46 : 40) * hs), Math.floor((port ? 26 : 30) * hs), hs, t);
+      // ── STAGE PLATE: wave/stage readout + scrolling threat ticker under the solver ──
+      phStagePlate(c, W, Math.floor((port ? 84 : 82) * hs), hs, t, port);
       // ── DIM-SLICE CHART (minimap, bottom-right) ──
       phDimSlice(c, W - Math.floor(64 * hs), H - Math.floor(64 * hs), Math.floor(52 * hs), hs, t, port);
       // ── XP TIDE ribbon along the deck lip ──
@@ -86710,6 +86719,10 @@ function _hideModifierBanner() {
       phChrono(c, W / 2 - Math.floor(86 * hs), conTop, hs, t);
       // ── buff wisps drifting over the deck right of the chronometer ──
       phBuffs(c, W, conTop, hs, t);
+      // ── INTERDICTION BEACON: the what's-next wave timer as a closing ring ──
+      phBeacon(c, Math.floor(W / 2), Math.floor((port ? 84 : 76) * hs), hs, t);
+      // ── RINSER TAP — the rinser's live cuts read out on the deck (hidden when clean) ──
+      phRinserTap(c, W, conTop, hs, t);
       // ── threat edge marks + boss corona ──
       phThreats(c, W, H, hs, t);
       // vignette
@@ -86840,6 +86853,11 @@ function _hideModifierBanner() {
     var col = pct < 0.3 ? 'rgba(255,90,130,' : TEAL;
     var a0 = -Math.PI * 0.75, sweep = Math.PI * 1.5;
     c.lineCap = 'round';
+    // ghost resonance echo — a faint wide arc breathing behind the hull ring
+    var ech = (t * 0.5) % 1;
+    c.strokeStyle = VIOLET + (0.16 * (1 - ech)).toFixed(2) + ')';
+    c.lineWidth = 1.4 * hs;
+    c.beginPath(); c.arc(0, 0, R * (0.78 + ech * 0.3), a0, a0 + sweep); c.stroke();
     c.strokeStyle = 'rgba(120,90,200,0.18)'; c.lineWidth = 6 * hs;
     c.beginPath(); c.arc(0, 0, R * 0.78, a0, a0 + sweep); c.stroke();
     c.shadowColor = col + '0.9)'; c.shadowBlur = 9;
@@ -86977,6 +86995,11 @@ function _hideModifierBanner() {
     P_metal(c, x - 4 * hs, y - 4 * hs, w + 8 * hs, h + 8 * hs, 5);
     P_lab(c, 'ANCHOR', x + w / 2, y - 10 * hs, Math.floor(6 * hs), VIOLET, 0.6);
     var full = ch >= 2, frac = ch >= 1 ? P_cl(ft / 60, 0, 1) : 0;   // partial regen shimmer
+    // anchor field ring — a slow shared charge halo around both drums
+    var afu = (t * 0.35) % 1;
+    c.strokeStyle = (full ? TEAL : VIOLET) + (0.2 * (1 - afu)).toFixed(2) + ')';
+    c.lineWidth = 1.2 * hs;
+    c.beginPath(); c.arc(x + w / 2, y + h / 2, (w / 2 + 8 * hs) + afu * 7 * hs, 0, 6.2832); c.stroke();
     for (var i = 0; i < 2; i++) {
       var dx = x + i * (w / 2 + 2 * hs), dw = w / 2 - 4 * hs;
       var charged = ch > i;
@@ -87285,6 +87308,143 @@ function _hideModifierBanner() {
       c.fillStyle = g; c.beginPath(); c.arc(wx, wy, 7 * hs, 0, 6.2832); c.fill();
       P_lab(c, tags[i], wx, wy - 10 * hs, Math.floor(5.5 * hs), isTeal ? TEAL : VIOLET, 0.7);
     }
+    c.restore();
+  }
+  // STAGE PLATE — the wave/stage readout the stock banner carries, rebuilt as
+  // an etched void plate: WAVE n // LV.m (or CH.x // STAGE y), hostiles-left
+  // counter that only blinks while a wave is active, and a scrolling threat
+  // ticker underneath. Sits directly below the Graze Solver dial.
+  function phStagePlate(c, W, y, hs, t, port) {
+    var main = '', sub = '';
+    try {
+      if (typeof isEndless !== 'undefined' && isEndless) {
+        var left = (typeof waveActive !== 'undefined' && waveActive && typeof enemies !== 'undefined') ? (' [' + enemies.length + ' LEFT]') : ((typeof waveCooldown !== 'undefined' && waveCooldown > 0) ? ' [NEXT WAVE...]' : '');
+        main = 'WAVE ' + (typeof waveNumber !== 'undefined' ? waveNumber : 1) + ' // LV.' + (typeof level !== 'undefined' ? level : 1) + left;
+      } else {
+        main = 'CH.' + (typeof currentChapter !== 'undefined' ? currentChapter : 1) + ' // STAGE ' + (typeof currentStage !== 'undefined' ? currentStage : 1);
+      }
+      var lv = (typeof level !== 'undefined' ? level : 1);
+      var threats = ['SCANNING VOID', 'THREAT:' + (lv < 10 ? 'LOW' : lv < 30 ? 'MODERATE' : lv < 50 ? 'HIGH' : 'CRITICAL'), 'HOSTILES:' + (typeof enemies !== 'undefined' ? enemies.length : 0), 'PHASE FLUX: STABLE'];
+      sub = threats[Math.floor(t * 0.7) % threats.length];
+    } catch (e) { return; }
+    if (!main) return;
+    var pw = Math.min(W * 0.62, 240 * hs), phh = 20 * hs, px = W / 2 - pw / 2;
+    c.save();
+    // dark etched plate with split-lit edges
+    c.fillStyle = 'rgba(5,3,14,0.8)';
+    c.beginPath();
+    c.moveTo(px + 6 * hs, y); c.lineTo(px + pw - 6 * hs, y); c.lineTo(px + pw, y + 4 * hs);
+    c.lineTo(px + pw - 4 * hs, y + phh); c.lineTo(px + 4 * hs, y + phh); c.lineTo(px, y + 4 * hs);
+    c.closePath(); c.fill();
+    P_split(c, function (cc) { cc.moveTo(px + 6 * hs, y); cc.lineTo(px + pw - 6 * hs, y); }, 1, 0.3, t);
+    c.strokeStyle = VIOLET + '0.25)'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(px + 4 * hs, y + phh); c.lineTo(px + pw - 4 * hs, y + phh); c.stroke();
+    // corner brackets
+    c.strokeStyle = TEAL + '0.4)'; c.lineWidth = 1.4 * hs;
+    c.beginPath(); c.moveTo(px + 3 * hs, y + 5 * hs); c.lineTo(px + 3 * hs, y + 1.5 * hs); c.lineTo(px + 9 * hs, y + 1.5 * hs); c.stroke();
+    c.beginPath(); c.moveTo(px + pw - 3 * hs, y + 5 * hs); c.lineTo(px + pw - 3 * hs, y + 1.5 * hs); c.lineTo(px + pw - 9 * hs, y + 1.5 * hs); c.stroke();
+    // main line — the hostile-count tail flickers only mid-wave
+    c.font = "bold " + Math.floor(8 * hs) + "px 'Share Tech Mono',monospace";
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.shadowColor = TEAL + '0.8)'; c.shadowBlur = 6;
+    c.fillStyle = 'rgba(235,255,250,0.92)';
+    c.fillText(main, W / 2, y + 8 * hs);
+    c.shadowBlur = 0;
+    // scrolling ticker — letters drift right-to-left through a clipped slit
+    c.font = "bold " + Math.floor(5.5 * hs) + "px 'Share Tech Mono',monospace";
+    c.save();
+    c.beginPath(); c.rect(px + 8 * hs, y + 12 * hs, pw - 16 * hs, 7 * hs); c.clip();
+    var txt = sub + '   ·   ' + sub + '   ·   ';
+    var tw = c.measureText(txt).width || 120 * hs;
+    var off = (t * 22 * hs) % tw;
+    c.fillStyle = VIOLET + '0.45)';
+    c.fillText(txt, px + pw - 8 * hs - off, y + 15.5 * hs);
+    c.restore();
+    c.restore();
+  }
+  // INTERDICTION BEACON — the what's-next wave timer as a closing phase ring.
+  // Mirrors the stock wave-timer math (endless: 600-frame cycle; campaign:
+  // stageTimer/3600), and when a boss is imminent it glows hot rose with a
+  // strobing tick ring.
+  function phBeacon(c, x, y, hs, t) {
+    var pct = 0, label = '';
+    try {
+      if (typeof gameRunning !== 'undefined' && gameRunning && typeof paused !== 'undefined' && !paused) {
+        if (typeof bossActive !== 'undefined' && bossActive) return;   // boss bar owns the top then
+        if (typeof isEndless !== 'undefined' && isEndless) {
+          pct = (typeof level !== 'undefined' && (level % 10) === 0) ? 1 : ((typeof frameCount !== 'undefined' ? frameCount : 0) % 600) / 600;
+          label = (level % 10 === 9 || pct > 0.8) ? 'BREACH IMMINENT' : 'NEXT INCURSION';
+        } else {
+          pct = Math.min(1, (typeof stageTimer !== 'undefined' ? stageTimer : 0) / 3600);
+          label = (typeof currentStage !== 'undefined' && currentStage === 5) || pct > 0.8 ? 'BREACH IMMINENT' : 'NEXT WAVE';
+        }
+      }
+    } catch (e) { return; }
+    if (!label) return;
+    var R = 12 * hs, hot = pct > 0.8;
+    c.save(); c.translate(x, y);
+    // dark well behind the dial
+    c.fillStyle = 'rgba(3,2,10,0.75)';
+    c.beginPath(); c.arc(0, 0, R + 3 * hs, 0, 6.2832); c.fill();
+    // track
+    c.strokeStyle = 'rgba(90,70,150,0.4)'; c.lineWidth = 2.6 * hs;
+    c.beginPath(); c.arc(0, 0, R, 0, 6.2832); c.stroke();
+    // closing arc — teal, hot rose near the breach
+    var col = hot ? 'rgba(255,110,150,' : TEAL;
+    c.shadowColor = col + '0.9)'; c.shadowBlur = hot ? 9 : 5;
+    c.strokeStyle = col + '0.9)'; c.lineWidth = 2.6 * hs;
+    c.beginPath(); c.arc(0, 0, R, -Math.PI / 2, -Math.PI / 2 + 6.2832 * pct); c.stroke();
+    c.shadowBlur = 0;
+    // leading pip rides the arc head
+    var ha = -Math.PI / 2 + 6.2832 * pct;
+    P_glowDot(c, Math.cos(ha) * R, Math.sin(ha) * R, 1.4 * hs, hot ? 'rgba(255,150,180,' : TEAL);
+    // orbit ticks that strobe faster as the breach nears
+    var strobe = Math.floor(t * (hot ? 8 : 2)) % 12;
+    for (var tk = 0; tk < 12; tk++) {
+      var ta = tk / 12 * 6.2832;
+      c.strokeStyle = tk === strobe ? col + '0.8)' : BONE + '0.12)';
+      c.lineWidth = 1;
+      c.beginPath(); c.moveTo(Math.cos(ta) * (R + 4 * hs), Math.sin(ta) * (R + 4 * hs));
+      c.lineTo(Math.cos(ta) * (R + 6 * hs), Math.sin(ta) * (R + 6 * hs)); c.stroke();
+    }
+    // centre glyph: interdicted crosshair
+    c.strokeStyle = col + '0.7)'; c.lineWidth = 1.2 * hs;
+    c.beginPath(); c.moveTo(-3 * hs, 0); c.lineTo(3 * hs, 0); c.moveTo(0, -3 * hs); c.lineTo(0, 3 * hs); c.stroke();
+    // label under the dial
+    P_lab(c, label, 0, R + 12 * hs, Math.floor(5.5 * hs), col, hot ? (0.55 + 0.45 * Math.sin(t * 6)) : 0.5);
+    c.restore();
+  }
+  // RINSER TAP — reads the rinser's live micro-cut registry (_autoLvl) and
+  // prints the shed layers as small etched tags on the deck. Quiet when the
+  // cab is running clean; the strip fades back in whenever the rinser cuts.
+  function phRinserTap(c, W, conTop, hs, t) {
+    var bits = [];
+    try {
+      var lv = window._autoLvl || {};
+      for (var k in lv) {
+        if (lv[k] > 0) bits.push(k.replace('skin:', '').replace('cat:', '').replace('mob:', '').toUpperCase().slice(0, 6) + '\u00B7' + lv[k]);
+      }
+    } catch (e) { return; }
+    var mem = window._phmRin || (window._phmRin = { n: 0, a: 0 });
+    if (bits.length) { mem.n = bits.length; mem.a = t; }
+    if (!mem.n) return;
+    var since = t - mem.a;
+    var al = since < 6 ? 0.55 : Math.max(0.16, 0.55 - (since - 6) * 0.05);   // fade to a faint idle strip
+    var shown = bits.length ? bits.slice(0, 6) : [];
+    if (!shown.length) return;
+    c.save();
+    c.globalAlpha = al;
+    var y = conTop + 44 * hs, x = W / 2 - 120 * hs;
+    P_split(c, function (cc) { cc.beginPath(); cc.moveTo(x - 6 * hs, y - 6 * hs); cc.lineTo(x + 150 * hs, y - 6 * hs); }, 1, 0.25, t);
+    for (var i = 0; i < shown.length; i++) {
+      var bx = x + i * 40 * hs;
+      c.fillStyle = 'rgba(10,6,22,0.85)';
+      c.fillRect(bx, y - 5 * hs, 36 * hs, 10 * hs);
+      c.strokeStyle = VIOLET + '0.4)'; c.lineWidth = 1;
+      c.strokeRect(bx, y - 5 * hs, 36 * hs, 10 * hs);
+      P_lab(c, shown[i], bx + 18 * hs, y, Math.floor(5.5 * hs), VIOLET, 0.8);
+    }
+    P_lab(c, 'RINSER', x - 30 * hs, y, Math.floor(5.5 * hs), TEAL, 0.5);
     c.restore();
   }
   // THREATS — edge marks for off-screen hostiles + boss corona
